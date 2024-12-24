@@ -1,12 +1,13 @@
-import Box from '@mui/material/Box';
+import React from "react";
+import Box from "@mui/material/Box";
 
-// interface TabPanelProps {
-//   children?: React.ReactNode;
-//   index: number;
-//   value: number;
-// }
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
 
-export default function CustomTabPanel(props) {
+export default function CustomTabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (

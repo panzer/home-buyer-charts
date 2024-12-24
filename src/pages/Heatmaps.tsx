@@ -1,28 +1,24 @@
 import React from "react";
-import "./App.css";
 import Plot from "react-plotly.js";
+import * as Plotly from "plotly.js";
 
-import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 
-import CottageIcon from "@mui/icons-material/Cottage";
+import NavBar from "../components/NavBar";
+import TabPanel from "../components/TabPanel";
+import PurchasePriceSelector from "../components/PurchasePriceSelector";
+import DownPaymentSelector from "../components/DownPaymentSelector";
+import InterestRateSelector from "../components/InterestRateSelector";
+import CashOnHandSelector from "../components/CashOnHandSelector";
+import IncomeSelector from "../components/IncomeSelector";
+import PropertyCollection from "../components/PropertyCollection";
 
-import TabPanel from "../src/components/TabPanel";
-import PurchasePriceSelector from "../src/components/PurchasePriceSelector";
-import DownPaymentSelector from "../src/components/DownPaymentSelector";
-import InterestRateSelector from "../src/components/InterestRateSelector";
-import CashOnHandSelector from "../src/components/CashOnHandSelector";
-import IncomeSelector from "../src/components/IncomeSelector";
+import * as Math from "../utils/math";
 
-import * as Math from "./Math";
-
-function App() {
+function Heatmaps() {
   const [selectedTab, setSelectedTab] = React.useState(0);
   const [purchasePriceMin, setPurchasePriceMin] = React.useState(500_000);
   const [purchasePriceMax, setPurchasePriceMax] = React.useState(1_500_000);
@@ -70,16 +66,28 @@ function App() {
     responsive: false,
   };
 
+  const selectedHomesPlotData: Plotly.Data = {
+    type: "scatter",
+    mode: "markers",
+    hovertext: ["Home1", "Home2"],
+    x: [550_000, 650_500],
+    y: [185_000, 190_000],
+    hoverinfo: "text",
+    marker: {
+      color: "black",
+    },
+  };
+
   const downPaymentArray = new Array(
     (downPaymentMax - downPaymentMin) / downPaymentStep + 1
   )
-    .fill()
+    .fill(null)
     .map((_, index) => downPaymentMin + downPaymentStep * index);
 
   const purchasePriceArray = new Array(
     (purchasePriceMax - purchasePriceMin) / purchasePriceStep + 1
   )
-    .fill()
+    .fill(null)
     .map((_, index) => purchasePriceMin + purchasePriceStep * index);
 
   const dpArr = Math.duplicateRowAcross2DArray(
@@ -96,13 +104,13 @@ function App() {
   const loanAmountArray = Math.subtract2DArrays(ppArr, dpArr);
   const mortgagePaymentMonthlyArray = Math.transformUnary2DArray(
     loanAmountArray,
-    (la) => Math.PMT(interestRate / 100 / 12, numLoanPeriods, -la)
+    (la: number) => Math.PMT(interestRate / 100 / 12, numLoanPeriods, -la)
   );
 
   const downPaymentUnder20MaskArray = Math.addNumberTo2DArrayWithPredicate(
     zerosArray,
     1,
-    (r, c) => downPaymentPercentageArray[r][c] < 0.2
+    (r: number, c: number) => downPaymentPercentageArray[r][c] < 0.2
   );
 
   const pmiMonthlyArray = Math.multiply2DArrays(
@@ -151,7 +159,7 @@ function App() {
     annualIncome / 1200 // so that percent is displayed out of 100
   );
 
-  function a11yProps(index) {
+  function a11yProps(index: number) {
     return {
       id: `simple-tab-${index}`,
       "aria-controls": `simple-tabpanel-${index}`,
@@ -160,22 +168,7 @@ function App() {
 
   return (
     <div className="App">
-      <AppBar position="static">
-        <Container maxWidth="xl">
-          <Toolbar>
-            <CottageIcon />
-            <Typography
-              variant="h6"
-              noWrap
-              sx={{
-                mr: 2,
-              }}
-            >
-              Home Buyer Charts
-            </Typography>
-          </Toolbar>
-        </Container>
-      </AppBar>
+      <NavBar />
       <Stack direction={"row"} margin={2}>
         <Box>
           <PurchasePriceSelector
@@ -222,15 +215,16 @@ function App() {
                     x: purchasePriceArray,
                     y: downPaymentArray,
                     z: monthlyHousingCostArray,
+                    hoverinfo: "x+y+z",
                     colorscale: "Cividis",
                     reversescale: false,
                     colorbar: {
                       title: "Monthly Housing Cost ($)",
                       titleside: "right",
                     },
-                    // transpose: true,
                     uirevision: revision,
                   },
+                  selectedHomesPlotData,
                 ]}
                 layout={{
                   title: "Monthly Housing Cost",
@@ -249,6 +243,7 @@ function App() {
                     x: purchasePriceArray,
                     y: downPaymentArray,
                     z: cashLeftAfterPurchaseArray,
+                    hoverinfo: "x+y+z",
                     zmin: 0,
                     zmax: cashOnHand,
                     colorscale: "RdBu",
@@ -257,9 +252,9 @@ function App() {
                       title: "Cash Left After Purchase ($)",
                       titleside: "right",
                     },
-                    // transpose: true,
                     uirevision: revision,
                   },
+                  selectedHomesPlotData,
                 ]}
                 layout={{
                   title: "Cash Left After Purchase",
@@ -278,6 +273,7 @@ function App() {
                     x: purchasePriceArray,
                     y: downPaymentArray,
                     z: numMonthsExpensesSavedArray,
+                    hoverinfo: "x+y+z",
                     zmin: 3,
                     zmax: 12,
                     colorscale: "Portland",
@@ -286,9 +282,9 @@ function App() {
                       title: "Months of Expenses Saved",
                       titleside: "right",
                     },
-                    // transpose: true,
                     uirevision: revision,
                   },
+                  selectedHomesPlotData,
                 ]}
                 layout={{
                   title: "Number of Months of Expenses Saved",
@@ -319,17 +315,7 @@ function App() {
                     // transpose: true,
                     uirevision: revision,
                   },
-                  {
-                    type: "scatter",
-                    mode: "markers",
-                    hovertext: ["Home1", "Home2"],
-                    x: [550_000, 650_500],
-                    y: [185_000, 190_000],
-                    hoverinfo: "text",
-                    marker: {
-                      color: "black",
-                    },
-                  },
+                  selectedHomesPlotData,
                 ]}
                 layout={{
                   title: "Debt to Income Ratio",
@@ -342,6 +328,7 @@ function App() {
             </TabPanel>
           </Box>
         </Box>
+        <PropertyCollection onChange={(p) => console.log(p)} />
       </Stack>
 
       {/* <Plot
@@ -402,4 +389,4 @@ function App() {
   );
 }
 
-export default App;
+export default Heatmaps;
