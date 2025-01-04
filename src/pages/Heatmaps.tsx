@@ -7,7 +7,6 @@ import Stack from "@mui/material/Stack";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 
-import NavBar from "../components/NavBar";
 import TabPanel from "../components/TabPanel";
 import PurchasePriceSelector from "../components/PurchasePriceSelector";
 import DownPaymentSelector from "../components/DownPaymentSelector";
@@ -168,8 +167,7 @@ function Heatmaps() {
 
   return (
     <div className="App">
-      <NavBar />
-      <Stack direction={"row"} margin={2}>
+      <Stack direction={"row"} margin={2} marginTop={12}>
         <Box>
           <PurchasePriceSelector
             defaultLowerValue={200}

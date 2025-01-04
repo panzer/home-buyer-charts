@@ -8,12 +8,16 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { blueGrey } from "@mui/material/colors";
 
 import Heatmaps from "./pages/Heatmaps";
+import HomePage from "./pages/HomePage";
 
 const theme = createTheme({
   palette: {
     primary: {
       main: blueGrey[500],
     },
+  },
+  shape: {
+    borderRadius: 12,
   },
 });
 
@@ -25,7 +29,10 @@ root.render(
     <ThemeProvider theme={theme}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Heatmaps />} />
+          <Route path="/" element={<App />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/explore" element={<Heatmaps />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
