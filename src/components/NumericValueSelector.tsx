@@ -1,7 +1,8 @@
 import * as React from "react";
-import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import Typography from "@mui/material/Typography";
+
+import ControlWrapper from "./ControllWrapper";
 
 interface NumericValueSelectorProps {
   title: string;
@@ -29,7 +30,7 @@ export default function NumericValueSelector(props: NumericValueSelectorProps) {
   };
 
   return (
-    <Box sx={{ width: 300, textAlign: "left", margin: 4 }}>
+    <ControlWrapper>
       <Typography id="input-slider" gutterBottom>
         {props.title}: {props.valuePrefix}
         {value}
@@ -46,6 +47,6 @@ export default function NumericValueSelector(props: NumericValueSelectorProps) {
         min={props.minValue}
         max={props.maxValue}
       />
-    </Box>
+    </ControlWrapper>
   );
 }

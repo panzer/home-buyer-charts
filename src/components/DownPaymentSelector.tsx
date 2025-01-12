@@ -1,7 +1,8 @@
 import * as React from "react";
-import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import Typography from "@mui/material/Typography";
+
+import ControlWrapper from "./ControllWrapper";
 
 function valuetext(value: number) {
   return `${value}°C`;
@@ -31,7 +32,7 @@ export default function DownPaymentSelector(props: DownPaymentSelectorProps) {
   };
 
   return (
-    <Box sx={{ width: 300, textAlign: "left", margin: 4 }}>
+    <ControlWrapper>
       <Typography id="input-slider" gutterBottom>
         Down Payment: ${value[0]}-{value[1]}k
       </Typography>
@@ -46,6 +47,6 @@ export default function DownPaymentSelector(props: DownPaymentSelectorProps) {
         min={props.minValue || 50}
         max={props.maxValue || 500}
       />
-    </Box>
+    </ControlWrapper>
   );
 }

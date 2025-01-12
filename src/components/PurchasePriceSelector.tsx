@@ -1,7 +1,8 @@
 import * as React from "react";
-import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import Typography from "@mui/material/Typography";
+
+import ControlWrapper from "./ControllWrapper";
 
 function valuetext(value: number) {
   return `${value}°C`;
@@ -33,7 +34,7 @@ export default function PurchasePriceSelector(
   };
 
   return (
-    <Box sx={{ width: 300, textAlign: "left", margin: 4 }}>
+    <ControlWrapper>
       <Typography id="input-slider" gutterBottom>
         Purchase Price: ${value[0]}-{value[1]}k
       </Typography>
@@ -48,6 +49,6 @@ export default function PurchasePriceSelector(
         min={props.minValue || 100}
         max={props.maxValue || 1000}
       />
-    </Box>
+    </ControlWrapper>
   );
 }

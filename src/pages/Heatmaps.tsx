@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 import TabPanel from "../components/TabPanel";
 import PurchasePriceSelector from "../components/PurchasePriceSelector";
@@ -34,6 +35,8 @@ function Heatmaps() {
 
   const [revision, setRevision] = React.useState(0);
 
+  const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+
   React.useEffect(() => {
     setRevision((r) => r + 1);
   }, [
@@ -56,13 +59,19 @@ function Heatmaps() {
   const propertyTaxRate = 1.5; // APR
   const primaryMortgageInsuranceRate = 1.5; // APR of loan amount
 
-  const plotLayoutCommon = {
+  const plotLayoutDesktop: Partial<Plotly.Layout> = {
     margin: { t: 50, r: 0, l: 70, b: 50 },
     // paper_bgcolor: "transparent",
   };
-  const plotConfigCommon = {
+  const plotLayoutMobile: Partial<Plotly.Layout> = {};
+  const plotLayoutCommon: Partial<Plotly.Layout> = {
+    autosize: true,
+    width: 300,
+    ...(isSmallScreen ? plotLayoutMobile : plotLayoutDesktop),
+  };
+  const plotConfigCommon: Partial<Plotly.Config> = {
     displaylogo: false,
-    responsive: false,
+    responsive: true,
   };
 
   const selectedHomesPlotData: Plotly.Data = {
@@ -167,7 +176,11 @@ function Heatmaps() {
 
   return (
     <div className="App">
-      <Stack direction={"row"} margin={2} marginTop={12}>
+      <Stack
+        margin={2}
+        marginTop={12}
+        sx={{ flexDirection: { sm: "column", md: "row" } }}
+      >
         <Box>
           <PurchasePriceSelector
             defaultLowerValue={200}
@@ -308,7 +321,8 @@ function Heatmaps() {
                     colorscale: "Portland",
                     colorbar: {
                       title: "DTI (%)",
-                      titleside: "right",
+                      titleside: "top",
+                      x: -50,
                     },
                     // transpose: true,
                     uirevision: revision,
