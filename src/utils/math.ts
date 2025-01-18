@@ -1,3 +1,12 @@
+type ScaleOpts = {
+  vMin?: number;
+  ontoMin?: number;
+} & ({vMax?: number; ontoMax: number;} | {vMax: number; ontoMax?: number;})
+export function scale(value: number, opts: ScaleOpts): number {
+  const {vMin = 0, vMax= 1, ontoMin = 0, ontoMax = 1} = opts;
+  return ontoMin + (value / (vMax - vMin)) * ontoMax
+}
+
 export function addNumberTo2DArray(array2D: number[][], numberToAdd: number) {
     return array2D.map((row) => row.map((value) => value + numberToAdd));
   }

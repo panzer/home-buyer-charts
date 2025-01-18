@@ -1,6 +1,5 @@
 import React from "react";
-import Plot from "react-plotly.js";
-import * as Plotly from "plotly.js";
+import { ResponsiveHeatMap } from "@nivo/heatmap";
 
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
@@ -15,6 +14,9 @@ import InterestRateSelector from "../components/InterestRateSelector";
 import CashOnHandSelector from "../components/CashOnHandSelector";
 import IncomeSelector from "../components/IncomeSelector";
 import PropertyCollection from "../components/PropertyCollection";
+import NivoTooltip from "../components/NivoTooltip";
+
+import { formatCurrency } from "../utils/currency";
 
 import * as Math from "../utils/math";
 
@@ -22,7 +24,7 @@ function Heatmaps() {
   const [selectedTab, setSelectedTab] = React.useState(0);
   const [purchasePriceMin, setPurchasePriceMin] = React.useState(500_000);
   const [purchasePriceMax, setPurchasePriceMax] = React.useState(1_500_000);
-  const [downPaymentMin, setDownPaymentMin] = React.useState(30_000);
+  const [downPaymentMin, setDownPaymentMin] = React.useState(100_000);
   const [downPaymentMax, setDownPaymentMax] = React.useState(300_000);
 
   const [interestRate, setInterestRate] = React.useState(6.5); // APR
@@ -33,28 +35,16 @@ function Heatmaps() {
 
   const [annualIncome, setAnnualIncome] = React.useState(230_000);
 
-  const [revision, setRevision] = React.useState(0);
-
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
-
-  React.useEffect(() => {
-    setRevision((r) => r + 1);
-  }, [
-    purchasePriceMin,
-    purchasePriceMax,
-    downPaymentMin,
-    downPaymentMax,
-    interestRate,
-    cashOnHand,
-    originationFeeRate,
-    originationFeeFixed,
-  ]);
 
   const sumMonthlyUtilities = 1_500;
   const sumOtherLifeEssentials = 1_500;
 
-  const purchasePriceStep = 10_000;
-  const downPaymentStep = 5_000;
+  const purchasePriceStep = 100_000;
+  // const downPaymentStep = 20_000;
+  const nStepsDownPayment = 6;
+  const downPaymentStep =
+    (downPaymentMax - downPaymentMin) / (nStepsDownPayment - 1);
   const numLoanPeriods = 360; // months
   const propertyTaxRate = 1.5; // APR
   const primaryMortgageInsuranceRate = 1.5; // APR of loan amount
@@ -74,17 +64,21 @@ function Heatmaps() {
     responsive: true,
   };
 
-  const selectedHomesPlotData: Plotly.Data = {
-    type: "scatter",
-    mode: "markers",
-    hovertext: ["Home1", "Home2"],
-    x: [550_000, 650_500],
-    y: [185_000, 190_000],
-    hoverinfo: "text",
-    marker: {
-      color: "black",
-    },
-  };
+  // Convert the 2D arrays into a format that Nivo can understand
+  const convertToNivoData = (
+    data2DArray: number[][],
+    xArray: number[],
+    yArray: number[]
+  ) =>
+    yArray.map((yValue, yIndex) => {
+      return {
+        id: String(yValue),
+        data: data2DArray[yIndex].map((cellValue, xIndex) => ({
+          x: xArray[xIndex],
+          y: cellValue,
+        })),
+      };
+    });
 
   const downPaymentArray = new Array(
     (downPaymentMax - downPaymentMin) / downPaymentStep + 1
@@ -166,6 +160,26 @@ function Heatmaps() {
     monthlyTotalEssentialsCostArray,
     annualIncome / 1200 // so that percent is displayed out of 100
   );
+  const monthlyHousingCostData = convertToNivoData(
+    monthlyHousingCostArray,
+    purchasePriceArray,
+    downPaymentArray
+  );
+  const cashLeftAfterPurchaseData = convertToNivoData(
+    cashLeftAfterPurchaseArray,
+    purchasePriceArray,
+    downPaymentArray
+  );
+  const numMonthsExpensesSavedData = convertToNivoData(
+    numMonthsExpensesSavedArray,
+    purchasePriceArray,
+    downPaymentArray
+  );
+  const debtToIncomeRatioData = convertToNivoData(
+    debtToIncomeRatio,
+    purchasePriceArray,
+    downPaymentArray
+  );
 
   function a11yProps(index: number) {
     return {
@@ -173,6 +187,8 @@ function Heatmaps() {
       "aria-controls": `simple-tabpanel-${index}`,
     };
   }
+
+  console.log(monthlyHousingCostData);
 
   return (
     <div className="App">
@@ -211,192 +227,161 @@ function Heatmaps() {
           <Tabs
             value={selectedTab}
             onChange={(event, newValue) => setSelectedTab(newValue)}
+            variant="scrollable"
           >
             <Tab label="Housing Cost" {...a11yProps(0)} />
             <Tab label="Cash Remaining" {...a11yProps(1)} />
             <Tab label="Monthly Safety Net" {...a11yProps(2)} />
             <Tab label="Debt To Income" {...a11yProps(3)} />
           </Tabs>
-          <Box bgcolor={"lightgray"}>
-            <TabPanel value={selectedTab} index={0}>
-              <Plot
-                data={[
-                  {
-                    type: "heatmap",
-                    x: purchasePriceArray,
-                    y: downPaymentArray,
-                    z: monthlyHousingCostArray,
-                    hoverinfo: "x+y+z",
-                    colorscale: "Cividis",
-                    reversescale: false,
-                    colorbar: {
-                      title: "Monthly Housing Cost ($)",
-                      titleside: "right",
-                    },
-                    uirevision: revision,
-                  },
-                  selectedHomesPlotData,
-                ]}
-                layout={{
-                  title: "Monthly Housing Cost",
-                  xaxis: { title: "Purchase Price ($)" },
-                  yaxis: { title: "Down Payment ($)" },
-                  ...plotLayoutCommon,
+          <Box paddingY={2} paddingX={0}>
+            <TabPanel
+              value={selectedTab}
+              index={0}
+              innerSx={{
+                height: isSmallScreen ? "400px" : "600px",
+              }}
+            >
+              <ResponsiveHeatMap
+                data={monthlyHousingCostData}
+                valueFormat=">-.2s"
+                colors={{ type: "sequential", scheme: "blues" }}
+                // colors={(cell)=>cell.value}
+                // keys={purchasePriceArray}
+                // indexBy="id"
+                margin={{ top: 0, right: 0, bottom: 60, left: 60 }}
+                // colors="cividis"
+                axisBottom={{
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: -30,
+                  legend: "Purchase Price ($)",
+                  legendOffset: 36,
+                  format: formatCurrency,
+                  tickValues: 4,
                 }}
-                config={plotConfigCommon}
+                axisLeft={{
+                  // orient: "left",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 0,
+                  legend: "Down Payment ($)",
+                  legendPosition: "middle",
+                  legendOffset: -50,
+                  format: formatCurrency,
+                  tickValues: 4,
+                }}
+                axisRight={null}
+                axisTop={null}
+                tooltip={NivoTooltip}
               />
             </TabPanel>
-            <TabPanel value={selectedTab} index={1}>
-              <Plot
-                data={[
-                  {
-                    type: "heatmap",
-                    x: purchasePriceArray,
-                    y: downPaymentArray,
-                    z: cashLeftAfterPurchaseArray,
-                    hoverinfo: "x+y+z",
-                    zmin: 0,
-                    zmax: cashOnHand,
-                    colorscale: "RdBu",
-                    reversescale: true,
-                    colorbar: {
-                      title: "Cash Left After Purchase ($)",
-                      titleside: "right",
-                    },
-                    uirevision: revision,
-                  },
-                  selectedHomesPlotData,
-                ]}
-                layout={{
-                  title: "Cash Left After Purchase",
-                  xaxis: { title: "Purchase Price ($)" },
-                  yaxis: { title: "Down Payment ($)" },
-                  ...plotLayoutCommon,
+            <TabPanel
+              value={selectedTab}
+              index={1}
+              innerSx={{
+                height: isSmallScreen ? "400px" : "600px",
+              }}
+            >
+              <ResponsiveHeatMap
+                data={cashLeftAfterPurchaseData}
+                // keys={purchasePriceArray}
+                // indexBy="id"
+                margin={{ top: 100, right: 60, bottom: 60, left: 60 }}
+                // colors="RdBu"
+                axisTop={{
+                  // orient: "top",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: -90,
+                  legend: "Purchase Price ($)",
+                  legendOffset: 36,
                 }}
-                config={plotConfigCommon}
+                axisRight={null}
+                axisBottom={null}
+                axisLeft={{
+                  // orient: "left",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 0,
+                  legend: "Down Payment ($)",
+                  legendPosition: "middle",
+                  legendOffset: -40,
+                }}
               />
             </TabPanel>
-            <TabPanel value={selectedTab} index={2}>
-              <Plot
-                data={[
-                  {
-                    type: "heatmap",
-                    x: purchasePriceArray,
-                    y: downPaymentArray,
-                    z: numMonthsExpensesSavedArray,
-                    hoverinfo: "x+y+z",
-                    zmin: 3,
-                    zmax: 12,
-                    colorscale: "Portland",
-                    reversescale: true,
-                    colorbar: {
-                      title: "Months of Expenses Saved",
-                      titleside: "right",
-                    },
-                    uirevision: revision,
-                  },
-                  selectedHomesPlotData,
-                ]}
-                layout={{
-                  title: "Number of Months of Expenses Saved",
-                  xaxis: { title: "Purchase Price ($)" },
-                  yaxis: { title: "Down Payment ($)" },
-                  ...plotLayoutCommon,
+            <TabPanel
+              value={selectedTab}
+              index={2}
+              innerSx={{
+                height: isSmallScreen ? "400px" : "600px",
+              }}
+            >
+              <ResponsiveHeatMap
+                data={numMonthsExpensesSavedData}
+                // keys={purchasePriceArray}
+                // indexBy="id"
+                margin={{ top: 100, right: 60, bottom: 60, left: 60 }}
+                // colors="Portland"
+                axisTop={{
+                  // orient: "top",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: -90,
+                  legend: "Purchase Price ($)",
+                  legendOffset: 36,
                 }}
-                config={plotConfigCommon}
+                axisRight={null}
+                axisBottom={null}
+                axisLeft={{
+                  // orient: "left",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 0,
+                  legend: "Down Payment ($)",
+                  legendPosition: "middle",
+                  legendOffset: -40,
+                }}
               />
             </TabPanel>
-            <TabPanel value={selectedTab} index={3}>
-              <Plot
-                data={[
-                  {
-                    type: "heatmap",
-                    name: "DTI",
-                    x: purchasePriceArray,
-                    y: downPaymentArray,
-                    z: debtToIncomeRatio,
-                    hoverinfo: "x+y+z",
-                    zmin: 20,
-                    zmax: 42,
-                    colorscale: "Portland",
-                    colorbar: {
-                      title: "DTI (%)",
-                      titleside: "top",
-                      x: -50,
-                    },
-                    // transpose: true,
-                    uirevision: revision,
-                  },
-                  selectedHomesPlotData,
-                ]}
-                layout={{
-                  title: "Debt to Income Ratio",
-                  xaxis: { title: "Purchase Price ($)" },
-                  yaxis: { title: "Down Payment ($)" },
-                  ...plotLayoutCommon,
+            <TabPanel
+              value={selectedTab}
+              index={3}
+              innerSx={{
+                height: isSmallScreen ? "400px" : "600px",
+              }}
+            >
+              <ResponsiveHeatMap
+                data={debtToIncomeRatioData}
+                // keys={purchasePriceArray}
+                // indexBy="id"
+                margin={{ top: 100, right: 60, bottom: 60, left: 60 }}
+                // colors="Portland"
+                axisTop={{
+                  // orient: "top",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: -90,
+                  legend: "Purchase Price ($)",
+                  legendOffset: 36,
                 }}
-                config={plotConfigCommon}
+                axisRight={null}
+                axisBottom={null}
+                axisLeft={{
+                  // orient: "left",
+                  tickSize: 5,
+                  tickPadding: 5,
+                  tickRotation: 0,
+                  legend: "Down Payment ($)",
+                  legendPosition: "middle",
+                  legendOffset: -40,
+                }}
               />
             </TabPanel>
           </Box>
         </Box>
-        <PropertyCollection onChange={(p) => console.log(p)} />
+        {/* <PropertyCollection onChange={(p) => console.log(p)} /> */}
       </Stack>
-
-      {/* <Plot
-        data={[
-          {
-            type: "heatmap",
-            x: purchasePriceArray,
-            y: downPaymentArray,
-            z: mortgagePaymentMonthlyArray,
-            colorscale: "Viridis",
-            reversescale: true,
-            colorbar: {
-              title: "Monthly Mortgage Payment ($)",
-              titleside: "right",
-            },
-            transpose: true,
-          },
-        ]}
-        layout={{
-          title: "Monthly Mortgage Payment",
-          xaxis: { title: "Purchase Price ($)" },
-          yaxis: { title: "Down Payment ($)" },
-          margin: { t: 50, r: 0, l: 70, b: 50 },
-        }}
-        config={{
-          displaylogo: false,
-          responsive: true,
-        }}
-      /> */}
-      {/* <Plot
-        data={[
-          {
-            type: "heatmap",
-            x: purchasePriceArray,
-            y: downPaymentArray,
-            z: pmiMonthlyArray,
-            colorscale: "Portland",
-            reversescale: false,
-            colorbar: {
-              title: "Monthly PMI ($)",
-              titleside: "right",
-            },
-            transpose: true,
-          },
-        ]}
-        layout={{
-          title: "Monthly PMI",
-          xaxis: { title: "Purchase Price ($)" },
-          yaxis: { title: "Down Payment ($)" },
-          margin: { t: 50, r: 0, l: 70, b: 50 },
-        }}
-        config={{
-          displaylogo: false,
-          responsive: true,
-        }}
-      /> */}
     </div>
   );
 }
