@@ -272,10 +272,15 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
         ])}
       </Grid>
       <ItemizedAssumptionsEditor
-        open={isEditorOpen}
+        slots={{
+          dialog: {
+            open: isEditorOpen,
+            onClose: () => setIsEditorOpen(false),
+            title: "Edit Expenses",
+          },
+        }}
         initialValue={monthlyHousing}
         onSave={console.log}
-        onClose={() => setIsEditorOpen(false)}
       />
     </Paper>
   );

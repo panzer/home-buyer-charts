@@ -19,15 +19,17 @@ type SomeExpenses = Expense[] | ExpenseRecurring[];
 type ItemizedAssumptionsEditorProps = {
   initialValue: SomeExpenses;
   onSave: (result: SomeExpenses) => void;
-} & DialogProps;
+  slots: { dialog: DialogProps };
+};
 
 const ItemizedAssumptionsEditor: React.FC<ItemizedAssumptionsEditorProps> = (
   props
 ) => {
   const formValues = props.initialValue;
+  const dialogProps = props.slots.dialog;
   return (
     <Dialog
-      {...props}
+      {...dialogProps}
       PaperProps={{
         component: "form",
         onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
@@ -35,15 +37,16 @@ const ItemizedAssumptionsEditor: React.FC<ItemizedAssumptionsEditorProps> = (
           const formData = new FormData(event.currentTarget);
           const formJson = Object.fromEntries((formData as any).entries());
           console.log(formJson);
-          props.onClose?.({}, "escapeKeyDown");
+          dialogProps.onClose?.({}, "escapeKeyDown");
+          props.onSave([]);
         },
       }}
     >
-      <DialogTitle>{props.title}</DialogTitle>
+      <DialogTitle>{dialogProps.title}</DialogTitle>
       <DialogContent>
         <Grid container spacing={1}>
           <Grid container size={12}>
-            <Grid size={"grow"}>Expense</Grid>
+            <Grid size={7}>Expense</Grid>
             <Grid size={3} textAlign="right">
               $/mo
             </Grid>
@@ -95,18 +98,12 @@ const ItemizedAssumptionsEditor: React.FC<ItemizedAssumptionsEditorProps> = (
       <DialogActions>
         <Button
           onClick={() => {
-            props.onClose?.({}, "escapeKeyDown");
+            dialogProps.onClose?.({}, "escapeKeyDown");
           }}
         >
           Cancel
         </Button>
-        <Button
-          type="submit"
-          onClick={() => {
-            props.onClose?.({}, "escapeKeyDown");
-            props.onSave([]);
-          }}
-        >
+        <Button type="submit" color="success">
           Save
         </Button>
       </DialogActions>
