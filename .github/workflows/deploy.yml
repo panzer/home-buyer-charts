@@ -1,5 +1,9 @@
 name: Build and Deploy to S3
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   push:
     branches:
@@ -27,6 +31,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          role-to-assume: arn:aws:iam::046829190025:role/GitHubActionsS3
           inline-session-policy: '{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:List*","Resource":"*"}]}'
           aws-region: us-east-1
 
