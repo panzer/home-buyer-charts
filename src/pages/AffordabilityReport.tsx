@@ -7,26 +7,30 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import IncomeSelector from "../components/IncomeSelector";
 import CashOnHandSelector from "../components/CashOnHandSelector";
-import AssumptionsComponent from "../components/Assumptions";
+import AssumptionsComponent, {Assumptions} from "../components/Assumptions";
 
 const AffordabilityReport = () => {
   const [cashOnHand, setCashOnHand] = React.useState(250_000);
   const [annualIncome, setAnnualIncome] = React.useState(230_000);
+  const [assumptions, setAssumptions] = React.useState<Assumptions>();
 
+  const {maximumDti, itemizedOtherDebts} = assumptions as Assumptions;
   const totalOtherDebtsMonthly = 0;
-
-  const maximumDti = 0.43;
-  const minimumDownPaymentPerc = 0.03;
-  const closingCostFixed = 1000;
-  const closingCostPercOfPurchase = 0.03;
-
+  
   const monthlyIncome = annualIncome / 12.0;
   const limitMonthlyDti = monthlyIncome * maximumDti - totalOtherDebtsMonthly;
   const limitDownPayment = 0;
 
   // Mock data, replace with actual data sources
   const dataBar = [
-    // Replace with actual data
+    {
+      id: "Limited by Debt-to-Income",
+      value: limitMonthlyDti,
+    },
+    {
+      id: "Limited by Down Payment",
+      value: limitDownPayment,
+    },
   ];
   const dataLine = [
     // Replace with actual data
@@ -45,11 +49,11 @@ const AffordabilityReport = () => {
         <CashOnHandSelector onSelect={(x) => setCashOnHand(x)} />
       </Box>
 
-      <AssumptionsComponent />
+      <AssumptionsComponent onChange={(a) => console.log("updating assumptions", a)}/>
       {/* Insert Nivo charts here based on the affordability report outline */}
       {/* Example Bar Chart */}
       <Box height={400}>
-        {/* <ResponsiveBar
+        <ResponsiveBar
           data={dataBar}
           keys={['value']}
           indexBy="id"
@@ -105,9 +109,9 @@ const AffordabilityReport = () => {
             }
           ]}
           animate={true}
-          motionStiffness={90}
-          motionDamping={15}
-        /> */}
+          // motionStiffness={90}
+          // motionDamping={15}
+        />
       </Box>
       {/* Example Line Chart */}
       <Box height={400}>
