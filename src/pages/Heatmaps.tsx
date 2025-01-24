@@ -49,17 +49,17 @@ function Heatmaps() {
   const propertyTaxRate = 1.5; // APR
   const primaryMortgageInsuranceRate = 1.5; // APR of loan amount
 
-  const plotLayoutDesktop: Partial<Plotly.Layout> = {
+  const plotLayoutDesktop = {
     margin: { t: 50, r: 0, l: 70, b: 50 },
     // paper_bgcolor: "transparent",
   };
-  const plotLayoutMobile: Partial<Plotly.Layout> = {};
-  const plotLayoutCommon: Partial<Plotly.Layout> = {
+  const plotLayoutMobile = {};
+  const plotLayoutCommon = {
     autosize: true,
     width: 300,
     ...(isSmallScreen ? plotLayoutMobile : plotLayoutDesktop),
   };
-  const plotConfigCommon: Partial<Plotly.Config> = {
+  const plotConfigCommon = {
     displaylogo: false,
     responsive: true,
   };

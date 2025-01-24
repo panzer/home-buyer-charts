@@ -7,60 +7,25 @@ import Link from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { Expense, ExpenseRecurring } from "..";
+import { Expense, ExpenseRecurring, sumExpenses } from "..";
 
 import ItemizedAssumptionsEditor from "../ItemizedAssumptionsEditor";
 import AssumptionSection from "./AssumptionsSection";
-
-
-function sumRecurringExpenses(expenses: ExpenseRecurring[]): number {
-  let annualTotal = 0;
-  expenses.forEach((expense) => {
-    if (expense.enabled !== false) {
-        switch (expense.frequency) {
-          case "daily":
-            annualTotal += expense.amount * 365;
-            break;
-          case "weekly":
-            annualTotal += expense.amount * 52;
-            break;
-          case "biweekly":
-            annualTotal += expense.amount * 26;
-            break;
-          case "monthly":
-            annualTotal += expense.amount * 12;
-            break;
-          case "annually":
-            annualTotal += expense.amount;
-            break;
-        }
-    }
-  });
-  return annualTotal;
-}
-
-function sumExpenses(expenses: Expense[]): number {
-  return expenses.reduce((accum, expense) => expense.enabled !== false ? accum + expense.amount : accum, 0)
-}
 
 export type Assumptions = {
   maximumDti: number;
   minimumDownPaymentPerc: number;
   minimumMonthsExpensesReserved: number;
 
-  sumOtherDebts: number;
-
-  sumClosingCostFixed: number;
   closingCostPercOfPurchase: number;
 
   propertyTaxRate: number;
   includeUtilities: boolean;
-  sumMonthlyUtilities: number;
   hoaMonthly: number;
   nMonthLoanTerm: number;
-  loanApr: number;
+  loanInterestRate: number;
 
-  itemizedMonthlyHousing: Expense[];
+  itemizedMonthlyUtilities: Expense[];
   itemizedOtherDebts: ExpenseRecurring[];
   itemizedClosingCosts: Expense[];
 };
@@ -70,23 +35,19 @@ type AssumptionsProps = {
   onChange?: (assumptions: Assumptions) => void;
 };
 
-const defaultAssumptions: Assumptions = {
+export const defaultAssumptions: Assumptions = {
   maximumDti: 0.43,
   minimumDownPaymentPerc: 0.03,
   minimumMonthsExpensesReserved: 3,
 
-  sumOtherDebts: 0,
-
-  sumClosingCostFixed: 1000,
   closingCostPercOfPurchase: 0.03,
 
   propertyTaxRate: 0.01,
   includeUtilities: true,
-  sumMonthlyUtilities: 300,
   hoaMonthly: 0,
 
   nMonthLoanTerm: 360,
-  loanApr: 0.07,
+  loanInterestRate: 0.07,
 
     itemizedOtherDebts: [
       {
@@ -113,7 +74,7 @@ const defaultAssumptions: Assumptions = {
       amount: 100,
     },
   ],
-    itemizedMonthlyHousing: [
+    itemizedMonthlyUtilities: [
       {
         name: "Water / Sewer",
         amount: 100,
@@ -140,7 +101,7 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
   const [assumptionsValue, setAssumptionsValue] = React.useState<Assumptions>({...defaultAssumptions, ...initialValue})
   const {
     nMonthLoanTerm,
-    loanApr,
+    loanInterestRate,
     maximumDti,
     minimumDownPaymentPerc,
     minimumMonthsExpensesReserved,
@@ -148,10 +109,7 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
     propertyTaxRate ,
     hoaMonthly,
     includeUtilities,
-    sumMonthlyUtilities,
-    sumOtherDebts,
-    sumClosingCostFixed,
-    itemizedMonthlyHousing,
+    itemizedMonthlyUtilities: itemizedMonthlyHousing,
     itemizedClosingCosts,
     itemizedOtherDebts,
   } = assumptionsValue;
@@ -183,8 +141,8 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
           { name: "Length", value: `${nMonthLoanTerm / 12}`, datum: "years" },
           {
             name: "Interest Rate",
-            value: `${(loanApr * 100).toFixed(2)}%`,
-            datum: "APR",
+            value: `${(loanInterestRate * 100).toFixed(2)}%`,
+            datum: "per year",
           },
           {
             name: "Fixed Closing Costs",

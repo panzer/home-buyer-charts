@@ -1,24 +1,37 @@
 import React from "react";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
+
 import { ResponsiveBar } from "@nivo/bar";
 // import { ResponsiveLine } from '@nivo/line';
-// import { ResponsivePie } from '@nivo/pie';
+import { ResponsivePie } from '@nivo/pie';
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import IncomeSelector from "../components/IncomeSelector";
 import CashOnHandSelector from "../components/CashOnHandSelector";
-import AssumptionsComponent, {Assumptions} from "../components/Assumptions";
+import AssumptionsComponent, {Assumptions, defaultAssumptions} from "../components/Assumptions";
+import { sumExpenses } from "../components";
+import { formatCurrency } from "../utils/currency";
+import { wrappedLegend } from "../utils/nivo";
 
 const AffordabilityReport = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [cashOnHand, setCashOnHand] = React.useState(250_000);
   const [annualIncome, setAnnualIncome] = React.useState(230_000);
-  const [assumptions, setAssumptions] = React.useState<Assumptions>();
+  const [assumptions, setAssumptions] = React.useState<Assumptions>(defaultAssumptions);
 
-  const {maximumDti, itemizedOtherDebts} = assumptions as Assumptions;
-  const totalOtherDebtsMonthly = 0;
-  
+  const {maximumDti, itemizedOtherDebts, itemizedMonthlyUtilities: itemizedMonthlyHousing, itemizedClosingCosts, loanInterestRate: loanApr, nMonthLoanTerm} = assumptions as Assumptions;
+  const totalOtherDebtsMonthly = sumExpenses(itemizedOtherDebts);
+  const totalMonthlyHousing = sumExpenses(itemizedMonthlyHousing);
+
   const monthlyIncome = annualIncome / 12.0;
+  const periodicRate = loanApr / 12.0;
+  const loanMultiplier = ((1+periodicRate)^nMonthLoanTerm - 1)/(periodicRate*(1+periodicRate)^nMonthLoanTerm)
   const limitMonthlyDti = monthlyIncome * maximumDti - totalOtherDebtsMonthly;
+  const borrowingPower = limitMonthlyDti * loanMultiplier;
   const limitDownPayment = 0;
 
   // Mock data, replace with actual data sources
@@ -36,8 +49,38 @@ const AffordabilityReport = () => {
     // Replace with actual data
   ];
   const dataPie = [
-    // Replace with actual data
+    {
+      id: "Other Debt Payments",
+      value: totalOtherDebtsMonthly,
+    },
+    {
+      id: "Utility Payments",
+      value: totalMonthlyHousing,
+    },
+    {
+      id: "Mortage Principle + Interest",
+      value: limitMonthlyDti,
+    },
+    {
+      id: "Escrow Payments",
+      value: 500,
+    }
   ];
+
+  const leg = wrappedLegend(dataPie, {legendProps:
+    {
+      anchor: isMobile ? 'bottom' : 'right',
+      direction: isMobile ? 'row' : 'column',
+      itemsSpacing: 10,
+      itemWidth: 160,
+      itemHeight: 18,
+      itemTextColor: theme.palette.text.secondary,
+      symbolSize: 18,
+      symbolShape: 'circle',
+    }, translateX: isMobile ? 0 : 56,
+    itemsPerLine: 2,
+    translateY: isMobile ? 100 : 0,})
+    console.log(leg)
 
   return (
     <Stack spacing={2} alignItems={"center"}>
@@ -45,8 +88,8 @@ const AffordabilityReport = () => {
         Home Affordability Report
       </Typography>
       <Box>
-        <IncomeSelector />
-        <CashOnHandSelector onSelect={(x) => setCashOnHand(x)} />
+        <IncomeSelector defaultValue={annualIncome}/>
+        <CashOnHandSelector defaultValue={cashOnHand} onSelect={(x) => setCashOnHand(x)} />
       </Box>
 
       <AssumptionsComponent onChange={(a) => console.log("updating assumptions", a)}/>
@@ -183,43 +226,33 @@ const AffordabilityReport = () => {
         /> */}
       </Box>
       {/* Example Pie Chart */}
-      {/* <Box height={400}>
+      <Box height={400} width={"100%"}>
         <ResponsivePie
           data={dataPie}
-          margin={{ top: 40, right: 80, bottom: 80, left: 80 }}
+          valueFormat={formatCurrency}
+          margin={{ top: 40, right: isMobile ? 20 : 156, bottom: isMobile ? 140 : 80, left: isMobile ? 20 : 0 }}
           innerRadius={0.5}
-          padAngle={0.7}
+          padAngle={1}
           cornerRadius={3}
           colors={{ scheme: 'nivo' }}
-          borderWidth={1}
+          borderWidth={3}
           borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
-          radialLabelsSkipAngle={10}
-          radialLabelsTextColor="#333333"
-          radialLabelsLinkColor={{ from: 'color' }}
-          sliceLabelsSkipAngle={10}
-          sliceLabelsTextColor="#333333"
-          legends={[
-            {
-              anchor: 'bottom',
-              direction: 'row',
-              translateY: 56,
-              itemWidth: 100,
-              itemHeight: 18,
-              itemTextColor: '#999',
-              symbolSize: 18,
-              symbolShape: 'circle',
-              effects: [
-                {
-                  on: 'hover',
-                  style: {
-                    itemTextColor: '#000'
-                  }
-                }
-              ]
-            }
-          ]}
-        /> */}
-      {/* </Box> */}
+          arcLabelsSkipAngle={10}
+          // arcLabelsTextColor={theme.palette.text.primary}
+          
+          // radialLabelsTextColor="#333333"
+          // radialLabelsLinkColor={{ from: 'color' }}
+          arcLinkLabelsSkipAngle={10}
+          arcLinkLabelsColor={{ from: 'color' }}
+          arcLinkLabelsTextColor={theme.palette.text.primary}
+          // sliceLabelsTextColor="#333333"
+          sortByValue={true}
+          animate={true}
+          isInteractive={true}
+          legends={leg
+          }
+        />
+      </Box>
     </Stack>
   );
 };
