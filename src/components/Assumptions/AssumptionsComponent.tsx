@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid2";
-import Link from "@mui/material/Link";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import { Expense, ExpenseRecurring, sumExpenses } from "..";
+import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid2';
+import Link from '@mui/material/Link';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { Expense, ExpenseRecurring, sumExpenses } from '..';
 
-import ItemizedAssumptionsEditor from "../ItemizedAssumptionsEditor";
-import AssumptionSection from "./AssumptionsSection";
+import ItemizedAssumptionsEditor from '../ItemizedAssumptionsEditor';
+import AssumptionSection from './AssumptionsSection';
 
 export type Assumptions = {
   maximumDti: number;
@@ -49,64 +49,66 @@ export const defaultAssumptions: Assumptions = {
   nMonthLoanTerm: 360,
   loanInterestRate: 0.07,
 
-    itemizedOtherDebts: [
-      {
-        name: "Car Payment",
-        amount: 0,
-        frequency: "monthly",
-      },
-      {
-        name: "Student Loans",
-        amount: 0,
-        frequency: "monthly",
-      },
-    ],
-    itemizedClosingCosts: [{
-      name: "Inspection",
+  itemizedOtherDebts: [
+    {
+      name: 'Car Payment',
+      amount: 0,
+      frequency: 'monthly',
+    },
+    {
+      name: 'Student Loans',
+      amount: 0,
+      frequency: 'monthly',
+    },
+  ],
+  itemizedClosingCosts: [
+    {
+      name: 'Inspection',
       amount: 500,
     },
     {
-      name: "Moving",
+      name: 'Moving',
       amount: 800,
     },
     {
-      name: "Title",
+      name: 'Title',
       amount: 100,
     },
   ],
-    itemizedMonthlyUtilities: [
-      {
-        name: "Water / Sewer",
-        amount: 100,
-      },
-      {
-        name: "Gas",
-        amount: 100,
-      },
-      {
-        name: "Electricity",
-        amount: 100,
-      },
-      {
-        name: "Internet",
-        amount: 40,
-      },
-    ],
+  itemizedMonthlyUtilities: [
+    {
+      name: 'Water / Sewer',
+      amount: 100,
+    },
+    {
+      name: 'Gas',
+      amount: 100,
+    },
+    {
+      name: 'Electricity',
+      amount: 100,
+    },
+    {
+      name: 'Internet',
+      amount: 40,
+    },
+  ],
 };
 
-
-
-const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
+const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
   const { initialValue = {}, onChange } = props;
-  const [assumptionsValue, setAssumptionsValue] = React.useState<Assumptions>({...defaultAssumptions, ...initialValue})
+  const [assumptionsValue, setAssumptionsValue] = React.useState<Assumptions>({
+    ...defaultAssumptions,
+    ...initialValue,
+  });
   const {
     nMonthLoanTerm,
     loanInterestRate,
     maximumDti,
     minimumDownPaymentPerc,
     minimumMonthsExpensesReserved,
-    closingCostPercOfPurchase ,
-    propertyTaxRate ,
+    closingCostPercOfPurchase,
+    propertyTaxRate,
     hoaMonthly,
     includeUtilities,
     itemizedMonthlyUtilities: itemizedMonthlyHousing,
@@ -114,105 +116,134 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = (props) => {
     itemizedOtherDebts,
   } = assumptionsValue;
 
-    const editorValues = {
-      itemizedMonthlyHousing,
+  const editorValues = {
+    itemizedMonthlyHousing,
     itemizedClosingCosts,
     itemizedOtherDebts,
-    };
-    const [editingValues, setEditingValues] = React.useState<"none" | keyof typeof editorValues>("none");
-  const isEditorOpen = React.useMemo(() => editingValues !== "none", [editingValues]);
-  const editorInitialValue = React.useMemo(() => editingValues !== "none" ? editorValues[editingValues] : [], [editingValues]);
-  const editorOnSave = React.useMemo(() => (data: Expense[] | ExpenseRecurring[]) => {
-    // console.log(`saving ${editingValues}`, data)
-    setAssumptionsValue({...assumptionsValue, [editingValues]: data})
-  }, [editingValues])
+  };
+  const [editingValues, setEditingValues] = React.useState<
+    'none' | keyof typeof editorValues
+  >('none');
+  const isEditorOpen = React.useMemo(
+    () => editingValues !== 'none',
+    [editingValues],
+  );
+  const editorInitialValue = React.useMemo(
+    () => (editingValues !== 'none' ? editorValues[editingValues] : []),
+    [editingValues],
+  );
+  const editorOnSave = React.useMemo(
+    () => (data: Expense[] | ExpenseRecurring[]) => {
+      // console.log(`saving ${editingValues}`, data)
+      setAssumptionsValue({ ...assumptionsValue, [editingValues]: data });
+    },
+    [editingValues],
+  );
 
-  React.useEffect(()=>{
-    onChange?.(assumptionsValue)
-  }, [onChange, assumptionsValue])
+  React.useEffect(() => {
+    onChange?.(assumptionsValue);
+  }, [onChange, assumptionsValue]);
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, maxWidth: "md" }}>
+    <Paper variant="outlined" sx={{ p: 2, maxWidth: 'md' }}>
       <Typography variant="h6" gutterBottom>
         Assumptions Overview
       </Typography>
       <Grid container spacing={2}>
-        <AssumptionSection subtitle="Loan Terms and Closing Costs" rows={[
-          { name: "Length", value: `${nMonthLoanTerm / 12}`, datum: "years" },
-          {
-            name: "Interest Rate",
-            value: `${(loanInterestRate * 100).toFixed(2)}%`,
-            datum: "per year",
-          },
-          {
-            name: "Fixed Closing Costs",
-            value: `$${sumExpenses(itemizedClosingCosts)}`,
-            onClick: () => setEditingValues("itemizedClosingCosts"),
-            subItems: itemizedClosingCosts.map((expense) => ({name: expense.name, value: `$${expense.amount}`})) },
-          {
-            name: "Closing Costs",
-            value: `${closingCostPercOfPurchase * 100}%`,
-            datum: "of purchase price",
-          },
-        ]} />
-        <AssumptionSection subtitle="Debt-to-Income (DTI) & Down Payment" rows={[
-          { name: "Maximum DTI", value: `${maximumDti * 100}%` },
-          {
-            name: "Minimum Down Payment",
-            value: `${minimumDownPaymentPerc * 100}%`,
-            datum: "of purchase price",
-          },
-          {
-            name: "Min. Expenses Held Post-Purchase",
-            value: `${minimumMonthsExpensesReserved}`,
-            datum: "months",
-          },
-        ]} />
-        <AssumptionSection subtitle="Debts & Closing Costs" rows={[
-          {
-            name: "Sum of Other Debts",
-            value: `$${sumExpenses(itemizedOtherDebts)}`,
-            datum: "per month",
-            onClick: () => setEditingValues("itemizedOtherDebts"),
-            subItems: itemizedOtherDebts?.map((expense) => ({
-              name: expense.name,
-              value: `$${expense.amount}`,
-              datum: "/mo",
-            })),
-          },
-          
-        ]} />
-        <AssumptionSection subtitle="Property Tax & Housing Costs" rows={[
-          {
-            name: "Property Tax Rate",
-            value: `${propertyTaxRate * 100}%`,
-            datum: "of property value",
-          },
-          {
-            name: "Home Owner's Assn. (HOA)",
-            value: `$${hoaMonthly}`,
-            datum: "per month",
-          },
-          { name: "Include Utilities", value: includeUtilities ? "Yes" : "No" },
-          {
-            name: "Sum of Utilities",
-            value: `$${sumExpenses(itemizedMonthlyHousing)}`,
-            datum: "per month",
-            onClick: () => setEditingValues("itemizedMonthlyHousing"),
-            subItems: itemizedMonthlyHousing.map((expense) => ({
-              name: expense.name,
-              value: `$${expense.amount}`,
-              datum: "/mo",
-            })),
-          },
-        ]} />
+        <AssumptionSection
+          subtitle="Loan Terms and Closing Costs"
+          rows={[
+            { name: 'Length', value: `${nMonthLoanTerm / 12}`, datum: 'years' },
+            {
+              name: 'Interest Rate',
+              value: `${(loanInterestRate * 100).toFixed(2)}%`,
+              datum: 'per year',
+            },
+            {
+              name: 'Fixed Closing Costs',
+              value: `$${sumExpenses(itemizedClosingCosts)}`,
+              onClick: () => setEditingValues('itemizedClosingCosts'),
+              subItems: itemizedClosingCosts.map(expense => ({
+                name: expense.name,
+                value: `$${expense.amount}`,
+              })),
+            },
+            {
+              name: 'Closing Costs',
+              value: `${closingCostPercOfPurchase * 100}%`,
+              datum: 'of purchase price',
+            },
+          ]}
+        />
+        <AssumptionSection
+          subtitle="Debt-to-Income (DTI) & Down Payment"
+          rows={[
+            { name: 'Maximum DTI', value: `${maximumDti * 100}%` },
+            {
+              name: 'Minimum Down Payment',
+              value: `${minimumDownPaymentPerc * 100}%`,
+              datum: 'of purchase price',
+            },
+            {
+              name: 'Min. Expenses Held Post-Purchase',
+              value: `${minimumMonthsExpensesReserved}`,
+              datum: 'months',
+            },
+          ]}
+        />
+        <AssumptionSection
+          subtitle="Debts & Closing Costs"
+          rows={[
+            {
+              name: 'Sum of Other Debts',
+              value: `$${sumExpenses(itemizedOtherDebts)}`,
+              datum: 'per month',
+              onClick: () => setEditingValues('itemizedOtherDebts'),
+              subItems: itemizedOtherDebts?.map(expense => ({
+                name: expense.name,
+                value: `$${expense.amount}`,
+                datum: '/mo',
+              })),
+            },
+          ]}
+        />
+        <AssumptionSection
+          subtitle="Property Tax & Housing Costs"
+          rows={[
+            {
+              name: 'Property Tax Rate',
+              value: `${propertyTaxRate * 100}%`,
+              datum: 'of property value',
+            },
+            {
+              name: "Home Owner's Assn. (HOA)",
+              value: `$${hoaMonthly}`,
+              datum: 'per month',
+            },
+            {
+              name: 'Include Utilities',
+              value: includeUtilities ? 'Yes' : 'No',
+            },
+            {
+              name: 'Sum of Utilities',
+              value: `$${sumExpenses(itemizedMonthlyHousing)}`,
+              datum: 'per month',
+              onClick: () => setEditingValues('itemizedMonthlyHousing'),
+              subItems: itemizedMonthlyHousing.map(expense => ({
+                name: expense.name,
+                value: `$${expense.amount}`,
+                datum: '/mo',
+              })),
+            },
+          ]}
+        />
       </Grid>
       <ItemizedAssumptionsEditor
         slots={{
           dialog: {
             open: isEditorOpen,
-            onClose: () => setEditingValues("none"),
-            title: "Edit Expenses",
+            onClose: () => setEditingValues('none'),
+            title: 'Edit Expenses',
           },
         }}
         initialValue={editorInitialValue}
