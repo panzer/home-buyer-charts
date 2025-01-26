@@ -59,7 +59,7 @@ const ItemRow: React.FC<ItemRowType> = (itemRow: ItemRowType) => {
           name={'↳ ' + subItemRow.name}
           indent={
             subItemRow.indent ??
-            (itemRow.indent != undefined ? itemRow.indent + 1 : 0)
+            (itemRow.indent !== undefined ? itemRow.indent + 1 : 0)
           }
           key={index}
         />

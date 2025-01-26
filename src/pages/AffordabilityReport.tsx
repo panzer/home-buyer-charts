@@ -1,35 +1,48 @@
-import React from "react";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
+import React from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
-import { ResponsiveBar } from "@nivo/bar";
+import { ResponsiveBar } from '@nivo/bar';
 // import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
-import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import IncomeSelector from "../components/IncomeSelector";
-import CashOnHandSelector from "../components/CashOnHandSelector";
-import AssumptionsComponent, {Assumptions, defaultAssumptions} from "../components/Assumptions";
-import { sumExpenses } from "../components";
-import { formatCurrency } from "../utils/currency";
-import { wrappedLegend } from "../utils/nivo";
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import IncomeSelector from '../components/IncomeSelector';
+import CashOnHandSelector from '../components/CashOnHandSelector';
+import AssumptionsComponent, {
+  Assumptions,
+  defaultAssumptions,
+} from '../components/Assumptions';
+import { sumExpenses } from '../components';
+import { formatCurrency } from '../utils/currency';
+import { wrappedLegend } from '../utils/nivo';
 
 const AffordabilityReport = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [cashOnHand, setCashOnHand] = React.useState(250_000);
   const [annualIncome, setAnnualIncome] = React.useState(230_000);
-  const [assumptions, setAssumptions] = React.useState<Assumptions>(defaultAssumptions);
+  const [assumptions, setAssumptions] =
+    React.useState<Assumptions>(defaultAssumptions);
 
-  const {maximumDti, itemizedOtherDebts, itemizedMonthlyUtilities: itemizedMonthlyHousing, itemizedClosingCosts, loanInterestRate: loanApr, nMonthLoanTerm} = assumptions as Assumptions;
+  const {
+    maximumDti,
+    itemizedOtherDebts,
+    itemizedMonthlyUtilities: itemizedMonthlyHousing,
+    itemizedClosingCosts,
+    loanInterestRate: loanApr,
+    nMonthLoanTerm,
+  } = assumptions as Assumptions;
   const totalOtherDebtsMonthly = sumExpenses(itemizedOtherDebts);
   const totalMonthlyHousing = sumExpenses(itemizedMonthlyHousing);
 
   const monthlyIncome = annualIncome / 12.0;
   const periodicRate = loanApr / 12.0;
-  const loanMultiplier = ((1+periodicRate)^nMonthLoanTerm - 1)/(periodicRate*(1+periodicRate)^nMonthLoanTerm)
+  const loanMultiplier =
+    ((1 + periodicRate) ^ (nMonthLoanTerm - 1)) /
+    ((periodicRate * (1 + periodicRate)) ^ nMonthLoanTerm);
   const limitMonthlyDti = monthlyIncome * maximumDti - totalOtherDebtsMonthly;
   const borrowingPower = limitMonthlyDti * loanMultiplier;
   const limitDownPayment = 0;
@@ -37,11 +50,11 @@ const AffordabilityReport = () => {
   // Mock data, replace with actual data sources
   const dataBar = [
     {
-      id: "Limited by Debt-to-Income",
+      id: 'Limited by Debt-to-Income',
       value: limitMonthlyDti,
     },
     {
-      id: "Limited by Down Payment",
+      id: 'Limited by Down Payment',
       value: limitDownPayment,
     },
   ];
@@ -50,25 +63,25 @@ const AffordabilityReport = () => {
   ];
   const dataPie = [
     {
-      id: "Other Debt Payments",
+      id: 'Other Debt Payments',
       value: totalOtherDebtsMonthly,
     },
     {
-      id: "Utility Payments",
+      id: 'Utility Payments',
       value: totalMonthlyHousing,
     },
     {
-      id: "Mortage Principle + Interest",
+      id: 'Mortage Principle + Interest',
       value: limitMonthlyDti,
     },
     {
-      id: "Escrow Payments",
+      id: 'Escrow Payments',
       value: 500,
-    }
+    },
   ];
 
-  const leg = wrappedLegend(dataPie, {legendProps:
-    {
+  const leg = wrappedLegend(dataPie, {
+    legendProps: {
       anchor: isMobile ? 'bottom' : 'right',
       direction: isMobile ? 'row' : 'column',
       itemsSpacing: 10,
@@ -77,25 +90,32 @@ const AffordabilityReport = () => {
       itemTextColor: theme.palette.text.secondary,
       symbolSize: 18,
       symbolShape: 'circle',
-    }, translateX: isMobile ? 0 : 56,
-    itemsPerLine: 2,
-    translateY: isMobile ? 100 : 0,})
-    console.log(leg)
+    },
+    translateX: isMobile ? 0 : 56,
+    itemsPerLine: isMobile ? 2 : 'no-wrap',
+    translateY: isMobile ? 100 : 0,
+  });
+  console.log(leg);
 
   return (
-    <Stack spacing={2} alignItems={"center"}>
+    <Stack spacing={2} alignItems={'center'}>
       <Typography variant="h4" gutterBottom>
         Home Affordability Report
       </Typography>
       <Box>
-        <IncomeSelector defaultValue={annualIncome}/>
-        <CashOnHandSelector defaultValue={cashOnHand} onSelect={(x) => setCashOnHand(x)} />
+        <IncomeSelector defaultValue={annualIncome} />
+        <CashOnHandSelector
+          defaultValue={cashOnHand}
+          onSelect={x => setCashOnHand(x)}
+        />
       </Box>
 
-      <AssumptionsComponent onChange={(a) => console.log("updating assumptions", a)}/>
+      <AssumptionsComponent
+        onChange={a => console.log('updating assumptions', a)}
+      />
       {/* Insert Nivo charts here based on the affordability report outline */}
       {/* Example Bar Chart */}
-      <Box height={400}>
+      <Box height={400} width={'100%'}>
         <ResponsiveBar
           data={dataBar}
           keys={['value']}
@@ -114,7 +134,7 @@ const AffordabilityReport = () => {
             tickRotation: 0,
             legend: 'category',
             legendPosition: 'middle',
-            legendOffset: 32
+            legendOffset: 32,
           }}
           axisLeft={{
             tickSize: 5,
@@ -122,7 +142,7 @@ const AffordabilityReport = () => {
             tickRotation: 0,
             legend: 'value',
             legendPosition: 'middle',
-            legendOffset: -40
+            legendOffset: -40,
           }}
           labelSkipWidth={12}
           labelSkipHeight={12}
@@ -145,11 +165,11 @@ const AffordabilityReport = () => {
                 {
                   on: 'hover',
                   style: {
-                    itemOpacity: 1
-                  }
-                }
-              ]
-            }
+                    itemOpacity: 1,
+                  },
+                },
+              ],
+            },
           ]}
           animate={true}
           // motionStiffness={90}
@@ -157,7 +177,7 @@ const AffordabilityReport = () => {
         />
       </Box>
       {/* Example Line Chart */}
-      <Box height={400}>
+      <Box height={100}>
         {/* <ResponsiveLine
           data={dataLine}
           margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
@@ -226,11 +246,16 @@ const AffordabilityReport = () => {
         /> */}
       </Box>
       {/* Example Pie Chart */}
-      <Box height={400} width={"100%"}>
+      <Box height={400} width={'100%'}>
         <ResponsivePie
           data={dataPie}
           valueFormat={formatCurrency}
-          margin={{ top: 40, right: isMobile ? 20 : 156, bottom: isMobile ? 140 : 80, left: isMobile ? 20 : 0 }}
+          margin={{
+            top: 40,
+            right: isMobile ? 20 : 156,
+            bottom: isMobile ? 140 : 80,
+            left: isMobile ? 20 : 0,
+          }}
           innerRadius={0.5}
           padAngle={1}
           cornerRadius={3}
@@ -239,7 +264,7 @@ const AffordabilityReport = () => {
           borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
           arcLabelsSkipAngle={10}
           // arcLabelsTextColor={theme.palette.text.primary}
-          
+
           // radialLabelsTextColor="#333333"
           // radialLabelsLinkColor={{ from: 'color' }}
           arcLinkLabelsSkipAngle={10}
@@ -249,8 +274,7 @@ const AffordabilityReport = () => {
           sortByValue={true}
           animate={true}
           isInteractive={true}
-          legends={leg
-          }
+          legends={leg}
         />
       </Box>
     </Stack>

@@ -77,7 +77,7 @@ const ItemizedAssumptionsEditor: React.FC<
     if (dialogProps.open) {
       setFormValues(props.initialValue);
     }
-  }, [dialogProps.open]);
+  }, [dialogProps.open, props.initialValue]);
 
   return (
     <Dialog

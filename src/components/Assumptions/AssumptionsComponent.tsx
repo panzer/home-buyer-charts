@@ -111,31 +111,31 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
     propertyTaxRate,
     hoaMonthly,
     includeUtilities,
-    itemizedMonthlyUtilities: itemizedMonthlyHousing,
+    itemizedMonthlyUtilities,
     itemizedClosingCosts,
     itemizedOtherDebts,
   } = assumptionsValue;
 
-  const editorValues = {
-    itemizedMonthlyHousing,
-    itemizedClosingCosts,
-    itemizedOtherDebts,
-  };
+  type EditableExpenses = Pick<
+    Assumptions,
+    'itemizedMonthlyUtilities' | 'itemizedClosingCosts' | 'itemizedOtherDebts'
+  >;
+
   const [editingValues, setEditingValues] = React.useState<
-    'none' | keyof typeof editorValues
+    'none' | keyof EditableExpenses
   >('none');
   const isEditorOpen = React.useMemo(
     () => editingValues !== 'none',
     [editingValues],
   );
   const editorInitialValue = React.useMemo(
-    () => (editingValues !== 'none' ? editorValues[editingValues] : []),
-    [editingValues],
+    () => (editingValues !== 'none' ? assumptionsValue[editingValues] : []),
+    [editingValues, assumptionsValue],
   );
   const editorOnSave = React.useMemo(
     () => (data: Expense[] | ExpenseRecurring[]) => {
       // console.log(`saving ${editingValues}`, data)
-      setAssumptionsValue({ ...assumptionsValue, [editingValues]: data });
+      setAssumptionsValue(av => ({ ...av, [editingValues]: data }));
     },
     [editingValues],
   );
@@ -226,10 +226,10 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
             },
             {
               name: 'Sum of Utilities',
-              value: `$${sumExpenses(itemizedMonthlyHousing)}`,
+              value: `$${sumExpenses(itemizedMonthlyUtilities)}`,
               datum: 'per month',
-              onClick: () => setEditingValues('itemizedMonthlyHousing'),
-              subItems: itemizedMonthlyHousing.map(expense => ({
+              onClick: () => setEditingValues('itemizedMonthlyUtilities'),
+              subItems: itemizedMonthlyUtilities.map(expense => ({
                 name: expense.name,
                 value: `$${expense.amount}`,
                 datum: '/mo',
