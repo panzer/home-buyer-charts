@@ -118,7 +118,7 @@ function getAmortizedPaymentMultiplier(
   inp: AmortizedPaymentMultiplierInputs,
 ): number {
   const { interestRatePerPeriod: i, nLoanPeriods: n } = inp;
-  return ((1 + i) ^ (n - 1)) / ((i * (i + 1)) ^ n);
+  return (((1 + i) ^ n) - 1) / (i * ((i + 1) ^ n));
 }
 
 type DownPaymentCalcInputs = {
@@ -141,9 +141,24 @@ export function idealMaximumDownPayment(inp: DownPaymentCalcInputs): number {
     interestRatePerPeriod,
     nLoanPeriods,
   } = inp;
+  const rm = r / 12;
   const z = getAmortizedPaymentMultiplier({
     interestRatePerPeriod,
     nLoanPeriods,
   });
-  return (n * (r * v * z + u * z + v) - s * z) / (n - z);
+  console.table(inp);
+  return (n * (rm * v * z + u * z + v) - s * z) / (n - z);
+}
+
+export function idealMonthlyPayment(inp: DownPaymentCalcInputs): number {
+  const w = idealMaximumDownPayment(inp);
+  console.log('w', w);
+  const l = inp.propertyValue - w;
+  return (
+    l /
+    getAmortizedPaymentMultiplier({
+      interestRatePerPeriod: inp.interestRatePerPeriod,
+      nLoanPeriods: inp.nLoanPeriods,
+    })
+  );
 }

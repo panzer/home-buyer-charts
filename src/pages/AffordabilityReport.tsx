@@ -18,7 +18,7 @@ import AssumptionsComponent, {
 import { sumExpenses } from '../components';
 import { formatCurrency } from '../utils/currency';
 import { wrappedLegend } from '../utils/nivo';
-import { idealMaximumDownPayment } from '../utils/math';
+import { idealMaximumDownPayment, idealMonthlyPayment } from '../utils/math';
 import NivoTooltip from '../components/NivoTooltip';
 
 const AffordabilityReport = () => {
@@ -37,6 +37,7 @@ const AffordabilityReport = () => {
     itemizedClosingCosts,
     loanInterestRate: loanApr,
     nMonthLoanTerm,
+    propertyTaxRate,
   } = assumptions as Assumptions;
   const totalOtherDebtsMonthly = sumExpenses(itemizedOtherDebts);
   const totalMonthlyHousing = sumExpenses(itemizedMonthlyHousing);
@@ -65,90 +66,86 @@ const AffordabilityReport = () => {
       value: limitDownPayment,
     },
   ];
-  const dataLine = [
-    // {
-    //   id: "DTI: 30%",
-    //   color: theme.palette.success.main,
-    //   data: [
-    //     { x: 400_000, y: monthlyIncome * 0.3 - totalOtherDebtsMonthly },
-    //     { x: 1_000_000, y: monthlyIncome * 0.3 - totalOtherDebtsMonthly },
-    //   ]
-    // },
-    // {
-    //   id: "DTI: 38%",
-    //   color: theme.palette.warning.main,
-    //   data: [
-    //     { x: 400_000, y: monthlyIncome * 0.38 - totalOtherDebtsMonthly },
-    //     { x: 1_000_000, y: monthlyIncome * 0.38 - totalOtherDebtsMonthly },
-    //   ]
-    // },
-    // {
-    //   id: "DTI: 43%",
-    //   color: theme.palette.error.main,
-    //   data: [
-    //     { x: 400_000, y: limitMonthlyDti },
-    //     { x: 1_000_000, y: limitMonthlyDti },
-    //   ]
-    // },
-    {
-      id: 'Payment with 3 month reserve',
-      data: [
-        {
-          x: 400_000,
-          y: idealMaximumDownPayment({
-            amountSaved: cashOnHand,
-            propertyValue: 400_000,
-            nMonthBuffer: 3,
-            monthlyFixed: totalMonthlyHousing,
-            propertyTaxRate: 0.0125,
-            interestRatePerPeriod: periodicRate,
-            nLoanPeriods: nMonthLoanTerm,
-          }),
-        },
-        {
-          x: 1_000_000,
-          y: idealMaximumDownPayment({
-            amountSaved: cashOnHand,
-            propertyValue: 1_000_000,
-            nMonthBuffer: 3,
-            monthlyFixed: totalMonthlyHousing,
-            propertyTaxRate: 0.0125,
-            interestRatePerPeriod: periodicRate,
-            nLoanPeriods: nMonthLoanTerm,
-          }),
-        },
-      ],
+
+  const propertyValues = React.useMemo(
+    () => [400_000, 600_000, 800_000, 1_000_000],
+    [],
+  );
+
+  const makePmtData = React.useMemo(
+    () => (pv: number[], nMonthBuffer: number) => {
+      return pv.map(v => ({
+        x: v,
+        y: idealMonthlyPayment({
+          amountSaved: cashOnHand,
+          propertyValue: v,
+          nMonthBuffer: nMonthBuffer,
+          monthlyFixed: totalMonthlyHousing,
+          propertyTaxRate: propertyTaxRate,
+          interestRatePerPeriod: periodicRate,
+          nLoanPeriods: nMonthLoanTerm,
+        }),
+      }));
     },
-    {
-      id: 'Payment with 12 month reserve',
-      data: [
-        {
-          x: 400_000,
-          y: idealMaximumDownPayment({
-            amountSaved: cashOnHand,
-            propertyValue: 400_000,
-            nMonthBuffer: 12,
-            monthlyFixed: totalMonthlyHousing,
-            propertyTaxRate: 0.0125,
-            interestRatePerPeriod: periodicRate,
-            nLoanPeriods: nMonthLoanTerm,
-          }),
-        },
-        {
-          x: 1_000_000,
-          y: idealMaximumDownPayment({
-            amountSaved: cashOnHand,
-            propertyValue: 1_000_000,
-            nMonthBuffer: 12,
-            monthlyFixed: totalMonthlyHousing,
-            propertyTaxRate: 0.0125,
-            interestRatePerPeriod: periodicRate,
-            nLoanPeriods: nMonthLoanTerm,
-          }),
-        },
-      ],
-    },
-  ];
+    [
+      cashOnHand,
+      totalMonthlyHousing,
+      propertyTaxRate,
+      periodicRate,
+      nMonthLoanTerm,
+    ],
+  );
+
+  function makeHorizontalLineData(pv: number[], y: number) {
+    return pv.map(v => ({ x: v, y }));
+  }
+
+  const dataLine = React.useMemo(
+    () => [
+      {
+        id: 'DTI: 30%',
+        color: theme.palette.success.main,
+        data: makeHorizontalLineData(
+          propertyValues,
+          monthlyIncome * 0.3 - totalOtherDebtsMonthly,
+        ),
+      },
+      {
+        id: 'DTI: 38%',
+        color: theme.palette.warning.main,
+        data: makeHorizontalLineData(
+          propertyValues,
+          monthlyIncome * 0.38 - totalOtherDebtsMonthly,
+        ),
+      },
+      {
+        id: 'DTI: 43%',
+        color: theme.palette.error.main,
+        data: makeHorizontalLineData(propertyValues, limitMonthlyDti),
+      },
+      {
+        id: 'Payment with 3 month reserve',
+        data: makePmtData(propertyValues, 3),
+      },
+      {
+        id: 'Payment with 6 month reserve',
+        data: makePmtData(propertyValues, 6),
+      },
+      {
+        id: 'Payment with 12 month reserve',
+        data: makePmtData(propertyValues, 12),
+      },
+    ],
+    [
+      limitMonthlyDti,
+      makePmtData,
+      monthlyIncome,
+      propertyValues,
+      theme,
+      totalOtherDebtsMonthly,
+    ],
+  );
+
   const dataPie = [
     {
       id: 'Other Debt Payments',
@@ -199,9 +196,7 @@ const AffordabilityReport = () => {
         />
       </Box>
 
-      <AssumptionsComponent
-        onChange={a => console.log('updating assumptions', a)}
-      />
+      <AssumptionsComponent onChange={setAssumptions} />
       {/* Insert Nivo charts here based on the affordability report outline */}
       {/* Example Bar Chart */}
       <Box height={400} width={'100%'}>
@@ -282,7 +277,7 @@ const AffordabilityReport = () => {
             type: 'linear',
             min: 'auto',
             max: 'auto',
-            stacked: true,
+            // stacked: true,
             reverse: false,
           }}
           axisTop={null}
@@ -315,7 +310,7 @@ const AffordabilityReport = () => {
           tooltip={NivoTooltip}
           legends={[
             {
-              anchor: isMobile ? 'bottom' : 'bottom-right',
+              anchor: isMobile ? 'bottom-left' : 'bottom-right',
               translateY: isMobile ? 150 : 0,
               direction: 'column',
               justify: false,
