@@ -1,5 +1,5 @@
 import { LegendProps } from '@nivo/legends';
-import { useOrdinalColorScale, OrdinalColorScaleConfig } from '@nivo/colors';
+import { getOrdinalColorScale, OrdinalColorScaleConfig } from '@nivo/colors';
 
 type LegendWrappingOptions<T> = {
   itemsPerLine?: number | 'no-wrap';
@@ -16,7 +16,8 @@ const defaultLegendProps: LegendProps = {
   itemHeight: 12,
   itemsSpacing: 25,
 };
-export function wrappedLegend<T extends { [k: string]: string | number }>(
+type DataPoint = { [k: string]: string | number } & { color?: string };
+export function wrappedLegend<T extends DataPoint>(
   chartData: T[],
   options?: LegendWrappingOptions<T>,
 ): LegendProps[] {
@@ -26,12 +27,15 @@ export function wrappedLegend<T extends { [k: string]: string | number }>(
     legendProps = {},
     translateX = 0,
     translateY = 0,
+    colors = { scheme: 'nivo' },
   } = options ?? {};
   const lp: LegendProps = { ...defaultLegendProps, ...legendProps };
 
   if (itemsPerLine === 'no-wrap') {
     return [lp];
   }
+
+  const getColor = getOrdinalColorScale(colors, 'id');
 
   const nItems = chartData.length;
   const nRows = Math.ceil(nItems / itemsPerLine);
@@ -47,7 +51,12 @@ export function wrappedLegend<T extends { [k: string]: string | number }>(
         .slice(itemsPerLine * index, itemsPerLine * (index + 1))
         .map((cur, j) => {
           const id = cur[indexBy as keyof T];
-          return { id: id, label: id, color: '#999' };
+          const dataPoint = chartData[index * itemsPerLine + j];
+          return {
+            id: id,
+            label: id,
+            color: dataPoint.color ?? getColor(dataPoint),
+          };
         }),
     }));
 }

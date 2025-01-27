@@ -3,8 +3,9 @@ import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
 import { ResponsiveBar } from '@nivo/bar';
-// import { ResponsiveLine } from '@nivo/line';
+import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
+import { OrdinalColorScaleConfig } from '@nivo/colors';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -17,6 +18,8 @@ import AssumptionsComponent, {
 import { sumExpenses } from '../components';
 import { formatCurrency } from '../utils/currency';
 import { wrappedLegend } from '../utils/nivo';
+import { idealMaximumDownPayment } from '../utils/math';
+import NivoTooltip from '../components/NivoTooltip';
 
 const AffordabilityReport = () => {
   const theme = useTheme();
@@ -47,6 +50,10 @@ const AffordabilityReport = () => {
   const borrowingPower = limitMonthlyDti * loanMultiplier;
   const limitDownPayment = 0;
 
+  const colorConfigCategorical: OrdinalColorScaleConfig = {
+    scheme: 'category10',
+  };
+
   // Mock data, replace with actual data sources
   const dataBar = [
     {
@@ -59,7 +66,88 @@ const AffordabilityReport = () => {
     },
   ];
   const dataLine = [
-    // Replace with actual data
+    // {
+    //   id: "DTI: 30%",
+    //   color: theme.palette.success.main,
+    //   data: [
+    //     { x: 400_000, y: monthlyIncome * 0.3 - totalOtherDebtsMonthly },
+    //     { x: 1_000_000, y: monthlyIncome * 0.3 - totalOtherDebtsMonthly },
+    //   ]
+    // },
+    // {
+    //   id: "DTI: 38%",
+    //   color: theme.palette.warning.main,
+    //   data: [
+    //     { x: 400_000, y: monthlyIncome * 0.38 - totalOtherDebtsMonthly },
+    //     { x: 1_000_000, y: monthlyIncome * 0.38 - totalOtherDebtsMonthly },
+    //   ]
+    // },
+    // {
+    //   id: "DTI: 43%",
+    //   color: theme.palette.error.main,
+    //   data: [
+    //     { x: 400_000, y: limitMonthlyDti },
+    //     { x: 1_000_000, y: limitMonthlyDti },
+    //   ]
+    // },
+    {
+      id: 'Payment with 3 month reserve',
+      data: [
+        {
+          x: 400_000,
+          y: idealMaximumDownPayment({
+            amountSaved: cashOnHand,
+            propertyValue: 400_000,
+            nMonthBuffer: 3,
+            monthlyFixed: totalMonthlyHousing,
+            propertyTaxRate: 0.0125,
+            interestRatePerPeriod: periodicRate,
+            nLoanPeriods: nMonthLoanTerm,
+          }),
+        },
+        {
+          x: 1_000_000,
+          y: idealMaximumDownPayment({
+            amountSaved: cashOnHand,
+            propertyValue: 1_000_000,
+            nMonthBuffer: 3,
+            monthlyFixed: totalMonthlyHousing,
+            propertyTaxRate: 0.0125,
+            interestRatePerPeriod: periodicRate,
+            nLoanPeriods: nMonthLoanTerm,
+          }),
+        },
+      ],
+    },
+    {
+      id: 'Payment with 12 month reserve',
+      data: [
+        {
+          x: 400_000,
+          y: idealMaximumDownPayment({
+            amountSaved: cashOnHand,
+            propertyValue: 400_000,
+            nMonthBuffer: 12,
+            monthlyFixed: totalMonthlyHousing,
+            propertyTaxRate: 0.0125,
+            interestRatePerPeriod: periodicRate,
+            nLoanPeriods: nMonthLoanTerm,
+          }),
+        },
+        {
+          x: 1_000_000,
+          y: idealMaximumDownPayment({
+            amountSaved: cashOnHand,
+            propertyValue: 1_000_000,
+            nMonthBuffer: 12,
+            monthlyFixed: totalMonthlyHousing,
+            propertyTaxRate: 0.0125,
+            interestRatePerPeriod: periodicRate,
+            nLoanPeriods: nMonthLoanTerm,
+          }),
+        },
+      ],
+    },
   ];
   const dataPie = [
     {
@@ -78,7 +166,7 @@ const AffordabilityReport = () => {
       id: 'Escrow Payments',
       value: 500,
     },
-  ];
+  ].sort(({ value: va }, { value: vb }) => vb - va);
 
   const leg = wrappedLegend(dataPie, {
     legendProps: {
@@ -94,6 +182,7 @@ const AffordabilityReport = () => {
     translateX: isMobile ? 0 : 56,
     itemsPerLine: isMobile ? 2 : 'no-wrap',
     translateY: isMobile ? 100 : 0,
+    colors: colorConfigCategorical,
   });
   console.log(leg);
 
@@ -120,7 +209,7 @@ const AffordabilityReport = () => {
           data={dataBar}
           keys={['value']}
           indexBy="id"
-          margin={{ top: 50, right: 130, bottom: 50, left: 60 }}
+          margin={{ top: 50, right: isMobile ? 0 : 130, bottom: 50, left: 100 }}
           padding={0.3}
           valueScale={{ type: 'linear' }}
           indexScale={{ type: 'band', round: true }}
@@ -177,39 +266,44 @@ const AffordabilityReport = () => {
         />
       </Box>
       {/* Example Line Chart */}
-      <Box height={100}>
-        {/* <ResponsiveLine
+      <Box height={400} width={'100%'}>
+        <ResponsiveLine
           data={dataLine}
-          margin={{ top: 50, right: 110, bottom: 50, left: 60 }}
+          enableArea
+          theme={{ text: { fill: theme.palette.text.primary } }}
+          margin={{
+            top: 50,
+            right: isMobile ? 20 : 110,
+            bottom: isMobile ? 150 : 50,
+            left: 100,
+          }}
           xScale={{ type: 'point' }}
           yScale={{
             type: 'linear',
             min: 'auto',
             max: 'auto',
             stacked: true,
-            reverse: false
+            reverse: false,
           }}
           axisTop={null}
           axisRight={null}
           axisBottom={{
-            orient: 'bottom',
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
-            legend: 'transportation',
+            legend: 'Home Purchase Value',
             legendOffset: 36,
-            legendPosition: 'middle'
+            legendPosition: 'middle',
           }}
           axisLeft={{
-            orient: 'left',
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
-            legend: 'count',
-            legendOffset: -40,
-            legendPosition: 'middle'
+            legend: 'Monthly Housing Payment',
+            legendOffset: -60,
+            legendPosition: 'middle',
           }}
-          colors={{ scheme: 'nivo' }}
+          // colors={{ scheme: 'nivo' }}
           pointSize={10}
           pointColor={{ theme: 'background' }}
           pointBorderWidth={2}
@@ -217,13 +311,15 @@ const AffordabilityReport = () => {
           pointLabel="y"
           pointLabelYOffset={-12}
           useMesh={true}
+          yFormat={lp => formatCurrency(lp.valueOf())}
+          tooltip={NivoTooltip}
           legends={[
             {
-              anchor: 'bottom-right',
+              anchor: isMobile ? 'bottom' : 'bottom-right',
+              translateY: isMobile ? 150 : 0,
               direction: 'column',
               justify: false,
               translateX: 100,
-              translateY: 0,
               itemsSpacing: 0,
               itemDirection: 'left-to-right',
               itemWidth: 80,
@@ -237,13 +333,13 @@ const AffordabilityReport = () => {
                   on: 'hover',
                   style: {
                     itemBackground: 'rgba(0, 0, 0, .03)',
-                    itemOpacity: 1
-                  }
-                }
-              ]
-            }
+                    itemOpacity: 1,
+                  },
+                },
+              ],
+            },
           ]}
-        /> */}
+        />
       </Box>
       {/* Example Pie Chart */}
       <Box height={400} width={'100%'}>
@@ -259,7 +355,7 @@ const AffordabilityReport = () => {
           innerRadius={0.5}
           padAngle={1}
           cornerRadius={3}
-          colors={{ scheme: 'nivo' }}
+          colors={colorConfigCategorical}
           borderWidth={3}
           borderColor={{ from: 'color', modifiers: [['darker', 0.2]] }}
           arcLabelsSkipAngle={10}
