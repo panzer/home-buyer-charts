@@ -1,12 +1,12 @@
-import React from "react";
+import React from 'react';
 import FormControl, {
   FormControlProps,
   useFormControl,
-} from "@mui/material/FormControl";
-import InputAdornment from "@mui/material/InputAdornment";
-import InputLabel, { InputLabelProps } from "@mui/material/InputLabel";
-import OutlinedInput, { OutlinedInputProps } from "@mui/material/OutlinedInput";
-import FormHelperText from "@mui/material/FormHelperText";
+} from '@mui/material/FormControl';
+import InputAdornment from '@mui/material/InputAdornment';
+import InputLabel, { InputLabelProps } from '@mui/material/InputLabel';
+import OutlinedInput, { OutlinedInputProps } from '@mui/material/OutlinedInput';
+import FormHelperText from '@mui/material/FormHelperText';
 
 const FocusedFormHelperText: React.FC<React.PropsWithChildren> = ({
   children,
@@ -35,7 +35,7 @@ interface DollarInputProps {
   inputLabelProps?: InputLabelProps;
   outlinedInputProps?: Omit<
     OutlinedInputProps,
-    "id" | "label" | "startAdornment"
+    'id' | 'label' | 'startAdornment'
   >;
 }
 
@@ -57,18 +57,18 @@ const DollarInput: React.FC<DollarInputProps> = ({
         {label}
       </InputLabel>
       <OutlinedInput
-        {...outlinedInputProps}
         id={id}
         startAdornment={<InputAdornment position="start">$</InputAdornment>}
-        endAdornment={<InputAdornment position="end">k</InputAdornment>}
+        // endAdornment={<InputAdornment position="end">k</InputAdornment>}
         label={label}
         defaultValue={defaultValue}
-        onChange={(event) => onChange?.(Number(event.target.value))}
+        onChange={event => onChange?.(Number(event.target.value))}
+        {...outlinedInputProps}
         inputProps={{
           step: step,
-          type: "text",
-          inputMode: "numeric",
-          pattern: "[0-9]*",
+          type: 'text',
+          inputMode: 'numeric',
+          pattern: '[0-9]*',
           ...outlinedInputProps?.inputProps,
         }}
       />

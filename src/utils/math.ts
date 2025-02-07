@@ -129,15 +129,19 @@ type DownPaymentCalcInputs = {
   propertyTaxRate: number; // R
   interestRatePerPeriod: number; // Z
   nLoanPeriods: number; // Z
+  fixedClosingCosts: number; // C
 };
 
-export function idealMaximumDownPayment(inp: DownPaymentCalcInputs): number {
+export function idealMaximumDownPayment(
+  inp: DownPaymentCalcInputs,
+): number | null {
   const {
     propertyValue: v,
     nMonthBuffer: n,
     monthlyFixed: u,
     propertyTaxRate: r,
     amountSaved: s,
+    fixedClosingCosts: c,
     interestRatePerPeriod,
     nLoanPeriods,
   } = inp;
@@ -147,18 +151,39 @@ export function idealMaximumDownPayment(inp: DownPaymentCalcInputs): number {
     nLoanPeriods,
   });
   console.table(inp);
-  return (n * (rm * v * z + u * z + v) - s * z) / (n - z);
+  if (s < c) return null; // cant cover closing costs
+  if (s < n * (u + v * r)) return null; // cant cover safety net
+
+  return (n * (rm * v * z + u * z + v) - (s - c) * z) / (n - z);
 }
 
-export function idealMonthlyPayment(inp: DownPaymentCalcInputs): number {
+export function idealMonthlyPayment(inp: DownPaymentCalcInputs): number | null {
   const w = idealMaximumDownPayment(inp);
-  console.log('w', w);
-  const l = inp.propertyValue - w;
-  return (
-    l /
+  return monthlyPaymentGivenDownPayment(w, inp);
+}
+
+export function monthlyPaymentGivenDownPayment(
+  downPayment: number | null,
+  inp: DownPaymentCalcInputs,
+): number | null {
+  const w = downPayment;
+  if (w === null) return null;
+  if (w < 0) return null;
+  // todo: pull minimum down payment from assumptions
+  if (w < inp.propertyValue * 0.03) return null;
+
+  const loanAmount = inp.propertyValue - w;
+  const pi =
+    loanAmount /
     getAmortizedPaymentMultiplier({
       interestRatePerPeriod: inp.interestRatePerPeriod,
       nLoanPeriods: inp.nLoanPeriods,
-    })
-  );
+    });
+  const taxes = (inp.propertyTaxRate * inp.propertyValue) / 12.0;
+  const insuranceAndOther = inp.monthlyFixed; // todo: add insurance
+  return pi + taxes + insuranceAndOther;
+}
+
+export function lesserOf(first: number, second: number | null) {
+  return second !== null && second < first ? second : first;
 }

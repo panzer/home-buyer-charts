@@ -17,7 +17,7 @@ const defaultLegendProps: LegendProps = {
   itemsSpacing: 25,
 };
 type DataPoint = { [k: string]: string | number } & { color?: string };
-export function wrappedLegend<T extends DataPoint>(
+export default function wrappedLegend<T extends DataPoint>(
   chartData: T[],
   options?: LegendWrappingOptions<T>,
 ): LegendProps[] {

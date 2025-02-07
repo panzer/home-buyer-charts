@@ -20,6 +20,7 @@ export type Assumptions = {
   closingCostPercOfPurchase: number;
 
   propertyTaxRate: number;
+  annualMaintenanceRate: number;
   includeUtilities: boolean;
   hoaMonthly: number;
   nMonthLoanTerm: number;
@@ -43,6 +44,7 @@ export const defaultAssumptions: Assumptions = {
   closingCostPercOfPurchase: 0.03,
 
   propertyTaxRate: 0.01,
+  annualMaintenanceRate: 0.01,
   includeUtilities: true,
   hoaMonthly: 0,
 
@@ -109,6 +111,7 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
     minimumMonthsExpensesReserved,
     closingCostPercOfPurchase,
     propertyTaxRate,
+    annualMaintenanceRate,
     hoaMonthly,
     includeUtilities,
     itemizedMonthlyUtilities,
@@ -213,6 +216,11 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
             {
               name: 'Property Tax Rate',
               value: `${propertyTaxRate * 100}%`,
+              datum: 'of property value',
+            },
+            {
+              name: 'Maintenance & Repairs',
+              value: `${annualMaintenanceRate * 100}%`,
               datum: 'of property value',
             },
             {
