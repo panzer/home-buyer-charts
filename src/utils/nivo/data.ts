@@ -1,4 +1,4 @@
-import { Serie } from '@nivo/line';
+import { Serie, Datum } from '@nivo/line';
 
 import { lesserOf } from '../math';
 
@@ -13,4 +13,8 @@ export function minimumAcrossSeries(dataLine: Serie[]) {
     }, Number.MAX_VALUE);
     return lesserOf(lowestOverall, seriesLow);
   }, Number.MAX_VALUE);
+}
+
+export function makeHorizontalLineData(xs: number[], y: number): Datum[] {
+  return xs.map(v => ({ x: v, y }));
 }

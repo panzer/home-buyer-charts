@@ -52,7 +52,10 @@ const DollarInput: React.FC<DollarInputProps> = ({
   outlinedInputProps,
 }) => {
   return (
-    <FormControl {...formControlProps} sx={{ m: 1, ...sx }}>
+    <FormControl
+      {...formControlProps}
+      sx={{ m: 1, minWidth: '10ch', maxWidth: '20ch', ...sx }}
+    >
       <InputLabel {...inputLabelProps} htmlFor={id}>
         {label}
       </InputLabel>
@@ -62,7 +65,10 @@ const DollarInput: React.FC<DollarInputProps> = ({
         // endAdornment={<InputAdornment position="end">k</InputAdornment>}
         label={label}
         defaultValue={defaultValue}
-        onChange={event => onChange?.(Number(event.target.value))}
+        onChange={event => {
+          console.log('event', event.target.value);
+          onChange?.(Number.parseFloat(event.target.value.replace(/,/g, '')));
+        }}
         {...outlinedInputProps}
         inputProps={{
           step: step,

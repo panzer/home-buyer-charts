@@ -1,5 +1,5 @@
-import * as React from "react";
-import DollarInput from "./DollarInput";
+import * as React from 'react';
+import DollarInput from './DollarInput';
 
 interface CashOnHandSelectorProps {
   minValue?: number;
@@ -15,14 +15,14 @@ export default function CashOnHandSelector(props: CashOnHandSelectorProps) {
       label="Cash Saved"
       defaultValue={props.defaultValue
         ?.toString()
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-      helpText="Liquid assets, saved for down payment and emergencies in thousands."
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+      helpText="Liquid assets, saved for down payment and emergencies"
       step={1000}
       onChange={props.onSelect}
       outlinedInputProps={{
         inputProps: {
           // Format the value with commas as thousands separators
-          pattern: "\\d{1,3}(,\\d{3})*",
+          pattern: '\\d{1,3}(,\\d{3})*',
         },
       }}
     />

@@ -3,14 +3,17 @@ import { Tooltip } from '@mui/material';
 import Paper from '@mui/material/Paper';
 import { TooltipProps } from '@nivo/heatmap';
 import { PointTooltipProps } from '@nivo/line';
+import { BarTooltipProps } from '@nivo/bar';
 
 type CustomTooltipProps = {
   formattedValue?: string | null;
   color: string;
+  bgImage?: string;
 };
 const CustomTooltip: React.FC<CustomTooltipProps> = ({
   formattedValue,
   color,
+  bgImage,
 }) => (
   <Tooltip title={formattedValue} placement="top" arrow>
     <Paper
@@ -22,15 +25,18 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
         justifyContent: 'center',
       }}
     >
-      <span
-        style={{
-          display: 'block',
-          width: '12px',
-          height: '12px',
-          backgroundColor: color,
-          margin: '4px',
-        }}
-      ></span>
+      <svg width="12" height="12" style={{ marginRight: 4 }}>
+        <rect
+          width="12"
+          height="12"
+          rx={0}
+          ry={0}
+          fill={bgImage ?? color}
+          strokeWidth={0}
+          stroke={color}
+          focusable="false"
+        />
+      </svg>
       {formattedValue}
     </Paper>
   </Tooltip>
@@ -38,22 +44,32 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({
 
 type NTProp =
   | TooltipProps<{ x: number | string; y: number }>
-  | PointTooltipProps;
+  | PointTooltipProps
+  | BarTooltipProps<unknown>;
 
 function NivoTooltip<T extends NTProp>(props: T): React.ReactNode {
+  console.log('tooltip', props);
   if ('cell' in props) {
     const { x, y, color, value, formattedValue } = props.cell;
     return <CustomTooltip formattedValue={formattedValue} color={color} />;
   }
   if ('point' in props) {
-    const { color, data, serieId } = props.point;
+    console.log('point', props.point);
+    const { serieColor, data, serieId } = props.point;
     return (
       <CustomTooltip
         formattedValue={`${serieId} | ${data.yFormatted}`}
-        color={color}
+        color={serieColor}
       />
     );
   }
+  return (
+    <CustomTooltip
+      formattedValue={`${props.id} | ${props.formattedValue}`}
+      color={props.color}
+      bgImage={props.fill}
+    />
+  );
 }
 
 export default NivoTooltip;

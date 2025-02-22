@@ -35,7 +35,7 @@ export const FORMAT_CURRENCY_BUDGET: FormatCurrencyOpts = {
   withDollarSign: true,
   withSuffix: false,
   withCommas: true,
-  withSign: true,
+  withSign: false,
 };
 
 export function formatCurrency(
@@ -80,6 +80,6 @@ export function formatCurrency(
 
   // Construct the final formatted currency string
   const currencySymbol = withDollarSign ? '$' : '';
-  const sign = withSign ? (formattedAmount > 0 ? '+  ' : '-  ') : '';
+  const sign = formattedAmount > 0 ? (withSign ? '+' : '') : '-';
   return `${sign}${currencySymbol}${formattedNumber}${units[unitIndex]}`;
 }

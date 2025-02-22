@@ -150,7 +150,7 @@ export function idealMaximumDownPayment(
     interestRatePerPeriod,
     nLoanPeriods,
   });
-  console.table(inp);
+  // console.table(inp);
   if (s < c) return null; // cant cover closing costs
   if (s < n * (u + v * r)) return null; // cant cover safety net
 

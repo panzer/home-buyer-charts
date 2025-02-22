@@ -4,6 +4,11 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
+import {
+  Theme as NivoTheme,
+  patternLinesDef,
+  patternDotsDef,
+} from '@nivo/core';
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
@@ -11,23 +16,32 @@ import { OrdinalColorScaleConfig } from '@nivo/colors';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import Bookmark from '@mui/icons-material/Bookmark';
+import BookmarkBorder from '@mui/icons-material/BookmarkBorder';
 import IncomeSelector from '../components/IncomeSelector';
 import CashOnHandSelector from '../components/CashOnHandSelector';
-import PercentagePie from '../components/PercentagePie';
 import AssumptionsComponent, {
   Assumptions,
   defaultAssumptions,
 } from '../components/Assumptions';
 import { sumExpenses } from '../components';
 import { formatCurrency, FORMAT_CURRENCY_BUDGET } from '../utils/currency';
-import { minimumAcrossSeries, wrappedLegend } from '../utils/nivo';
+import {
+  minimumAcrossSeries,
+  wrappedLegend,
+  makeHorizontalLineData,
+} from '../utils/nivo';
 import {
   idealMaximumDownPayment,
   idealMonthlyPayment,
   monthlyPaymentGivenDownPayment,
 } from '../utils/math';
+
 import NivoTooltip from '../components/NivoTooltip';
 import {
+  Button,
+  Card,
+  CardContent,
   Paper,
   Table,
   TableBody,
@@ -36,16 +50,25 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
 import BudgetTableRow from '../components/BudgetTable/BudgetTableRow';
+import {
+  getTestSeriesData,
+  testCalculateRiskCrossoversToDisplay,
+} from '../core/affordabilityZoneLines';
 
 const AffordabilityReport = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Calculation state
   const [cashOnHand, setCashOnHand] = React.useState(250_000);
   const [annualIncome, setAnnualIncome] = React.useState(230_000);
   const [assumptions, setAssumptions] =
     React.useState<Assumptions>(defaultAssumptions);
+
+  // UI state
+  const [isPinned, setIsPinned] = React.useState(false);
 
   const {
     maximumDti,
@@ -63,7 +86,6 @@ const AffordabilityReport = () => {
   const monthlyIncome = annualIncome / 12.0;
   const periodicRate = loanApr / 12.0;
   const limitMonthlyDti = monthlyIncome * maximumDti - totalOtherDebtsMonthly;
-  const limitDownPayment = 0;
 
   const colorConfigCategorical: OrdinalColorScaleConfig = {
     scheme: 'category10',
@@ -72,17 +94,45 @@ const AffordabilityReport = () => {
   // Mock data, replace with actual data sources
   const dataBar = [
     {
-      id: 'Limited by Debt-to-Income',
-      value: limitMonthlyDti,
+      id: '500,000',
+      'High Risk - Savings': 1,
+      'Medium Risk - Savings': 1,
+      'Low Risk - Savings': 8,
+      'Low Risk - Income': 5,
+      'Medium Risk - Income': 5,
+      'High Risk - Income': 1,
     },
     {
-      id: 'Limited by Down Payment',
-      value: limitDownPayment,
+      id: '600,000',
+      'High Risk - Savings': 2,
+      'Medium Risk - Savings': 2,
+      'Low Risk - Savings': 6,
+      'Low Risk - Income': 5,
+      'Medium Risk - Income': 5,
+      'High Risk - Income': 1,
+    },
+    {
+      id: '700,000',
+      'High Risk - Savings': 3,
+      'Medium Risk - Savings': 3,
+      'Low Risk - Savings': 4,
+      'Low Risk - Income': 5,
+      'Medium Risk - Income': 5,
+      'High Risk - Income': 1,
+    },
+    {
+      id: '800,000',
+      'High Risk - Savings': 4,
+      'Medium Risk - Savings': 4,
+      'Low Risk - Savings': 2,
+      'Low Risk - Income': 5,
+      'Medium Risk - Income': 5,
+      'High Risk - Income': 1,
     },
   ];
 
   const propertyValues = React.useMemo(
-    () => [400_000, 600_000, 800_000, 1_000_000],
+    () => [600_000, 700_000, 800_000, 900_000, 1_000_000],
     [],
   );
 
@@ -112,12 +162,29 @@ const AffordabilityReport = () => {
     ],
   );
 
-  function makeHorizontalLineData(pv: number[], y: number) {
-    return pv.map(v => ({ x: v, y }));
-  }
-
   const dataLine = React.useMemo(
     () => [
+      {
+        id: 'Payment with 3 month reserve',
+        color: theme.palette.error.main,
+        data: makePmtData(propertyValues, 3),
+      },
+      {
+        id: 'Payment with 6 month reserve',
+        color: theme.palette.error.main,
+        data: makePmtData(propertyValues, 6),
+      },
+
+      {
+        id: 'Payment with 12 month reserve',
+        color: theme.palette.warning.main,
+        data: makePmtData(propertyValues, 12),
+      },
+      {
+        id: 'Payment with 24 month reserve',
+        color: theme.palette.success.main,
+        data: makePmtData(propertyValues, 24),
+      },
       {
         id: 'DTI: 30%',
         color: theme.palette.success.main,
@@ -138,22 +205,6 @@ const AffordabilityReport = () => {
         id: 'DTI: 43%',
         color: theme.palette.error.main,
         data: makeHorizontalLineData(propertyValues, limitMonthlyDti),
-      },
-      {
-        id: 'Payment with 3 month reserve',
-        data: makePmtData(propertyValues, 3),
-      },
-      {
-        id: 'Payment with 6 month reserve',
-        data: makePmtData(propertyValues, 6),
-      },
-      {
-        id: 'Payment with 12 month reserve',
-        data: makePmtData(propertyValues, 12),
-      },
-      {
-        id: 'Payment with 24 month reserve',
-        data: makePmtData(propertyValues, 24),
       },
     ],
     [
@@ -201,25 +252,100 @@ const AffordabilityReport = () => {
     translateY: isMobile ? 100 : 0,
     colors: colorConfigCategorical,
   });
-  console.log(cashOnHand);
+
+  const barColors = [
+    theme.palette.success.main,
+    theme.palette.success.main,
+    theme.palette.success.main,
+    theme.palette.warning.main,
+    theme.palette.warning.main,
+    theme.palette.warning.main,
+    theme.palette.error.main,
+    theme.palette.error.main,
+    theme.palette.error.main,
+  ];
+  // const barLegend = wrappedLegend(dataPie, {
+  //   legendProps: {
+  //     // itemsSpacing: 10,
+  //     // itemWidth: 160,
+  //     // itemHeight: 18,
+  //     // symbolSize: 18,
+  //     // symbolShape: 'circle',
+  //     dataFrom: 'keys',
+  //     anchor: isMobile ? 'bottom' : 'right',
+  //     direction: isMobile ? 'row' : 'column',
+  //     justify: false,
+  //     translateX: 120,
+  //     translateY: 0,
+  //     itemsSpacing: 2,
+  //     itemWidth: 100,
+  //     itemHeight: 20,
+  //     itemTextColor: theme.palette.text.secondary,
+  //     itemDirection: 'left-to-right',
+  //     itemOpacity: 0.85,
+  //     symbolSize: 20,
+  //     effects: [
+  //       {
+  //         on: 'hover',
+  //         style: {
+  //           itemOpacity: 1,
+  //         },
+  //       },
+  //     ],
+  //   },
+  //   translateX: isMobile ? 0 : 56,
+  //   itemsPerLine: isMobile ? 2 : 'no-wrap',
+  //   translateY: isMobile ? 100 : 0,
+  //   colors: colorConfigCategorical,
+  // });
 
   const budgetRemainForDebtExpenses = monthlyIncome * 0.43;
   const budgetRemainForHousing =
     budgetRemainForDebtExpenses - totalOtherDebtsMonthly;
   const budgetLimitMonthlyPiti = budgetRemainForHousing - totalMonthlyUtilities;
 
+  const chartTheme: NivoTheme = { text: { fill: theme.palette.text.primary } };
+  const pattern = (id: string, color: string) =>
+    patternDotsDef(id, {
+      color,
+      size: 2.5,
+      padding: 0.1,
+      stagger: true,
+      background: 'inherit',
+    });
+  // patternLinesDef('green-lines', { color: theme.palette.success.main, rotation: -45, lineWidth: 5, spacing: 10, background: 'inherit' }),
+
   return (
     <Stack spacing={2} alignItems={'center'} mx={2}>
       <Typography variant="h4" gutterBottom>
         Home Affordability Report
       </Typography>
-      <Box>
-        <IncomeSelector defaultValue={annualIncome} />
+      <Paper
+        variant={isPinned ? 'elevation' : 'outlined'}
+        elevation={isPinned ? 4 : 0}
+        sx={{
+          p: 2,
+          position: isPinned ? 'sticky' : 'static',
+          top: theme => theme.spacing(2),
+          zIndex: 1000,
+          maxWidth: 'sm',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
+        <IncomeSelector
+          defaultValue={annualIncome}
+          onSelect={x => setAnnualIncome(x)}
+        />
         <CashOnHandSelector
           defaultValue={cashOnHand}
           onSelect={x => setCashOnHand(x)}
         />
-      </Box>
+        <IconButton onClick={() => setIsPinned(!isPinned)}>
+          {isPinned ? <Bookmark /> : <BookmarkBorder />}
+        </IconButton>
+      </Paper>
 
       <AssumptionsComponent onChange={setAssumptions} />
       <Typography
@@ -302,15 +428,47 @@ const AffordabilityReport = () => {
           </TableBody>
         </Table>
       </TableContainer>
-      <Typography
-        variant="h5"
-        textAlign="left"
-        width="100%"
-        sx={{ mx: 4, p: 1 }}
-      >
-        1. Your Affordability Zone
+      <Typography variant="h5" textAlign="left" width="100%">
+        2. Your Affordability Zone
       </Typography>
-      <Box height={400} width={'100%'}>
+
+      <Typography variant="body1" textAlign="left" width="100%">
+        Your affordability zone is made up from two factors:
+      </Typography>
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="body1" textAlign="left" width="100%">
+            <Typography variant="h6" textAlign="left" width="100%">
+              2.1. Debt-to-Income (DTI) Ratio
+            </Typography>
+            <Typography variant="body1" textAlign="left" width="100%">
+              Your DTI ratio is the percentage of your monthly income that goes
+              towards housing costs. A lower monthly payment is more comfortable
+              to afford. Everyone understands that paying less, when possible,
+              is better.
+            </Typography>
+          </Typography>
+        </CardContent>
+      </Card>
+      <Card variant="outlined">
+        <CardContent>
+          <Typography variant="body1" textAlign="left" width="100%">
+            <Typography variant="h6" textAlign="left" width="100%">
+              2.2. Savings Retained After the Purchase
+            </Typography>
+            <Typography variant="body1" textAlign="left" width="100%">
+              Given the amount of money you have saved, a certain amount of
+              savings must be retained after the purchase to ensure you have
+              enough money for emergencies and other expenses. In some cases, a
+              lender may require at least 3 months worth of expenses. However,
+              for a comfortable safety net, you can aim for 6 months, a year, or
+              more. This puts a lower limit on how low your monthly payment
+              could get.
+            </Typography>
+          </Typography>
+        </CardContent>
+      </Card>
+      {/* <Box height={400} width={'100%'}>
         <ErrorBoundary
           fallback={<Typography variant="h6">Something went wrong.</Typography>}
         >
@@ -318,7 +476,9 @@ const AffordabilityReport = () => {
             data={dataLine}
             enableArea
             areaBaselineValue={minimumAcrossSeries(dataLine)}
-            theme={{ text: { fill: theme.palette.text.primary } }}
+            areaBlendMode='normal'
+            areaOpacity={0.5}
+            theme={chartTheme}
             margin={{
               top: 50,
               right: isMobile ? 20 : 180,
@@ -333,6 +493,7 @@ const AffordabilityReport = () => {
               // stacked: true,
               reverse: false,
             }}
+            colors={{ datum: 'color' }}
             axisTop={null}
             axisRight={null}
             axisBottom={{
@@ -351,8 +512,7 @@ const AffordabilityReport = () => {
               legendOffset: -60,
               legendPosition: 'middle',
             }}
-            // colors={{ scheme: 'nivo' }}
-            pointSize={10}
+            pointSize={4}
             pointColor={{ theme: 'background' }}
             pointBorderWidth={2}
             pointBorderColor={{ from: 'serieColor' }}
@@ -389,37 +549,90 @@ const AffordabilityReport = () => {
             ]}
           />
         </ErrorBoundary>
-      </Box>
-      {/* Example Bar Chart */}
+      </Box> */}
       <Box height={400} width={'100%'}>
         <ResponsiveBar
-          data={dataBar}
-          keys={['value']}
-          indexBy="id"
-          margin={{ top: 50, right: isMobile ? 0 : 130, bottom: 50, left: 100 }}
-          padding={0.3}
-          valueScale={{ type: 'linear' }}
+          data={getTestSeriesData({ cashOnHand, annualIncome }, assumptions)}
+          minValue={2000}
+          keys={
+            // ["High Risk - Savings",
+            // "Medium Risk - Savings",
+            // "Low Risk - Savings",
+            // "Low Risk - Income",
+            // "Medium Risk - Income",
+            // "High Risk - Income",]
+            [
+              'lowDtiHighReserve',
+              'lowDtiMediumReserve',
+              'lowDtiLowReserve',
+
+              'mediumDtiHighReserve',
+              'mediumDtiMediumReserve',
+              'mediumDtiLowReserve',
+
+              'highDtiHighReserve',
+              'highDtiMediumReserve',
+              'highDtiLowReserve',
+            ]
+          }
+          indexBy="index"
+          defs={[
+            // slashed green line
+            pattern('green-lines', theme.palette.success.main),
+            // slashed red line
+            pattern('red-lines', theme.palette.error.main),
+            // slashed yellow line
+            pattern('yellow-lines', theme.palette.warning.main),
+          ]}
+          fill={[
+            {
+              id: 'green-lines',
+              match: d => d.data.id.toString().includes('LowReserve'),
+            },
+            {
+              id: 'yellow-lines',
+              match: d => d.data.id.toString().includes('MediumReserve'),
+            },
+            {
+              id: 'red-lines',
+              match: d => d.data.id.toString().includes('HighReserve'),
+            },
+          ]}
+          margin={{
+            top: 50,
+            right: isMobile ? 0 : 130,
+            bottom: 50,
+            left: isMobile ? 50 : 100,
+          }}
+          padding={isMobile ? 0.05 : 0.3}
+          valueScale={{ type: 'linear', clamp: true }}
           indexScale={{ type: 'band', round: true }}
-          colors={{ scheme: 'nivo' }}
+          theme={chartTheme}
+          colors={barColors}
           borderColor={{ from: 'color', modifiers: [['darker', 1.6]] }}
           axisTop={null}
           axisRight={null}
           axisBottom={{
             tickSize: 5,
             tickPadding: 5,
-            tickRotation: 0,
-            legend: 'category',
+            tickRotation: isMobile ? -50 : 0,
+            // tickValues: [200_000, 400_000, 600_000, 800_000, 1_000_000, 1_200_000].map((x) => formatCurrency(x)),
+            legend: 'Purchase Price',
             legendPosition: 'middle',
-            legendOffset: 32,
+            legendOffset: 36,
+            format: formatCurrency,
           }}
           axisLeft={{
-            tickSize: 5,
+            tickSize: 0,
             tickPadding: 5,
             tickRotation: 0,
-            legend: 'value',
+            legend: 'Monthly Payment',
             legendPosition: 'middle',
-            legendOffset: -40,
+            legendOffset: -44,
           }}
+          tooltip={NivoTooltip}
+          valueFormat={formatCurrency}
+          enableLabel={false}
           labelSkipWidth={12}
           labelSkipHeight={12}
           labelTextColor={{ from: 'color', modifiers: [['darker', 1.6]] }}

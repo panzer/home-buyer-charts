@@ -4,6 +4,7 @@ import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
 
 import PercentagePie, { PercentagePieProps } from '../PercentagePie';
+import { Typography } from '@mui/material';
 
 type BudgetTableRowProps = {
   name: string;
@@ -32,7 +33,9 @@ const BudgetTableRow: React.FC<BudgetTableRowProps> = ({
             alignItems: 'center',
           }}
         >
-          {value}
+          <Typography fontFamily="monospace" variant="body2">
+            {value}
+          </Typography>
           {percentage !== undefined && (
             <>
               &nbsp;

@@ -163,6 +163,11 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
               datum: 'per year',
             },
             {
+              name: 'Closing Costs',
+              value: `${closingCostPercOfPurchase * 100}%`,
+              datum: 'of purchase price',
+            },
+            {
               name: 'Fixed Closing Costs',
               value: `$${sumExpenses(itemizedClosingCosts)}`,
               onClick: () => setEditingValues('itemizedClosingCosts'),
@@ -171,15 +176,10 @@ const AssumptionsComponent: React.FC<AssumptionsProps> = props => {
                 value: `$${expense.amount}`,
               })),
             },
-            {
-              name: 'Closing Costs',
-              value: `${closingCostPercOfPurchase * 100}%`,
-              datum: 'of purchase price',
-            },
           ]}
         />
         <AssumptionSection
-          subtitle="Debt-to-Income (DTI) & Down Payment"
+          subtitle="Risk Profile"
           rows={[
             { name: 'Maximum DTI', value: `${maximumDti * 100}%` },
             {
