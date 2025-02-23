@@ -12,7 +12,11 @@ import {
 import { ResponsiveBar } from '@nivo/bar';
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
+import { ResponsiveHeatMap } from '@nivo/heatmap';
 import { OrdinalColorScaleConfig } from '@nivo/colors';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -31,11 +35,6 @@ import {
   wrappedLegend,
   makeHorizontalLineData,
 } from '../utils/nivo';
-import {
-  idealMaximumDownPayment,
-  idealMonthlyPayment,
-  monthlyPaymentGivenDownPayment,
-} from '../utils/math';
 
 import NivoTooltip from '../components/NivoTooltip';
 import {
@@ -50,11 +49,12 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import IconButton from '@mui/material/IconButton';
 import BudgetTableRow from '../components/BudgetTable/BudgetTableRow';
 import {
+  getHeatmapAffordability,
   getTestSeriesData,
-  testCalculateRiskCrossoversToDisplay,
 } from '../core/affordabilityZoneLines';
 
 const AffordabilityReport = () => {
@@ -90,132 +90,6 @@ const AffordabilityReport = () => {
   const colorConfigCategorical: OrdinalColorScaleConfig = {
     scheme: 'category10',
   };
-
-  // Mock data, replace with actual data sources
-  const dataBar = [
-    {
-      id: '500,000',
-      'High Risk - Savings': 1,
-      'Medium Risk - Savings': 1,
-      'Low Risk - Savings': 8,
-      'Low Risk - Income': 5,
-      'Medium Risk - Income': 5,
-      'High Risk - Income': 1,
-    },
-    {
-      id: '600,000',
-      'High Risk - Savings': 2,
-      'Medium Risk - Savings': 2,
-      'Low Risk - Savings': 6,
-      'Low Risk - Income': 5,
-      'Medium Risk - Income': 5,
-      'High Risk - Income': 1,
-    },
-    {
-      id: '700,000',
-      'High Risk - Savings': 3,
-      'Medium Risk - Savings': 3,
-      'Low Risk - Savings': 4,
-      'Low Risk - Income': 5,
-      'Medium Risk - Income': 5,
-      'High Risk - Income': 1,
-    },
-    {
-      id: '800,000',
-      'High Risk - Savings': 4,
-      'Medium Risk - Savings': 4,
-      'Low Risk - Savings': 2,
-      'Low Risk - Income': 5,
-      'Medium Risk - Income': 5,
-      'High Risk - Income': 1,
-    },
-  ];
-
-  const propertyValues = React.useMemo(
-    () => [600_000, 700_000, 800_000, 900_000, 1_000_000],
-    [],
-  );
-
-  const makePmtData = React.useMemo(
-    () => (pv: number[], nMonthBuffer: number) => {
-      return pv.map(v => ({
-        x: v,
-        y: idealMonthlyPayment({
-          amountSaved: cashOnHand,
-          propertyValue: v,
-          nMonthBuffer: nMonthBuffer,
-          monthlyFixed: totalMonthlyUtilities,
-          propertyTaxRate: propertyTaxRate,
-          interestRatePerPeriod: periodicRate,
-          nLoanPeriods: nMonthLoanTerm,
-          fixedClosingCosts: totalClosingCosts,
-        }),
-      }));
-    },
-    [
-      cashOnHand,
-      totalMonthlyUtilities,
-      totalClosingCosts,
-      propertyTaxRate,
-      periodicRate,
-      nMonthLoanTerm,
-    ],
-  );
-
-  const dataLine = React.useMemo(
-    () => [
-      {
-        id: 'Payment with 3 month reserve',
-        color: theme.palette.error.main,
-        data: makePmtData(propertyValues, 3),
-      },
-      {
-        id: 'Payment with 6 month reserve',
-        color: theme.palette.error.main,
-        data: makePmtData(propertyValues, 6),
-      },
-
-      {
-        id: 'Payment with 12 month reserve',
-        color: theme.palette.warning.main,
-        data: makePmtData(propertyValues, 12),
-      },
-      {
-        id: 'Payment with 24 month reserve',
-        color: theme.palette.success.main,
-        data: makePmtData(propertyValues, 24),
-      },
-      {
-        id: 'DTI: 30%',
-        color: theme.palette.success.main,
-        data: makeHorizontalLineData(
-          propertyValues,
-          monthlyIncome * 0.3 - totalOtherDebtsMonthly,
-        ),
-      },
-      {
-        id: 'DTI: 38%',
-        color: theme.palette.warning.main,
-        data: makeHorizontalLineData(
-          propertyValues,
-          monthlyIncome * 0.38 - totalOtherDebtsMonthly,
-        ),
-      },
-      {
-        id: 'DTI: 43%',
-        color: theme.palette.error.main,
-        data: makeHorizontalLineData(propertyValues, limitMonthlyDti),
-      },
-    ],
-    [
-      limitMonthlyDti,
-      makePmtData,
-      monthlyIncome,
-      propertyValues,
-      theme,
-      totalOtherDebtsMonthly,
-    ],
-  );
 
   const dataPie = [
     {
@@ -304,7 +178,33 @@ const AffordabilityReport = () => {
     budgetRemainForDebtExpenses - totalOtherDebtsMonthly;
   const budgetLimitMonthlyPiti = budgetRemainForHousing - totalMonthlyUtilities;
 
-  const chartTheme: NivoTheme = { text: { fill: theme.palette.text.primary } };
+  const chartTheme: NivoTheme = {
+    text: {
+      fill: theme.palette.text.primary,
+    },
+    annotations: {
+      text: {
+        fill: theme.palette.text.primary,
+        outlineWidth: 2,
+        outlineColor: theme.palette.background.default,
+      },
+      link: {
+        stroke: theme.palette.text.primary,
+        outlineWidth: 2,
+        outlineColor: theme.palette.background.default,
+      },
+      outline: {
+        stroke: theme.palette.text.primary,
+        outlineWidth: 2,
+        outlineColor: theme.palette.background.default,
+      },
+      symbol: {
+        fill: theme.palette.text.primary,
+        outlineWidth: 2,
+        outlineColor: theme.palette.background.default,
+      },
+    },
+  };
   const pattern = (id: string, color: string) =>
     patternDotsDef(id, {
       color,
@@ -342,132 +242,140 @@ const AffordabilityReport = () => {
           defaultValue={cashOnHand}
           onSelect={x => setCashOnHand(x)}
         />
-        <IconButton onClick={() => setIsPinned(!isPinned)}>
+        <IconButton color="primary" onClick={() => setIsPinned(!isPinned)}>
           {isPinned ? <Bookmark /> : <BookmarkBorder />}
         </IconButton>
       </Paper>
 
-      <AssumptionsComponent onChange={setAssumptions} />
-      <Typography
-        variant="h5"
-        textAlign="left"
-        width="100%"
-        sx={{ mx: 4, p: 1 }}
-      >
-        1. Monthly Budget Breakdown
-      </Typography>
-      <TableContainer component={Paper} sx={{ maxWidth: 'sm' }}>
-        <Table aria-label="simple table">
-          <TableHead>
-            <TableRow
-              sx={{ backgroundColor: theme => theme.palette.action.hover }}
-            >
-              <TableCell size="small">Category</TableCell>
-              <TableCell size="small" align="right">
-                Monthly
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <BudgetTableRow
-              name="Income"
-              value={formatCurrency(monthlyIncome, FORMAT_CURRENCY_BUDGET)}
-              percentage={1}
-            />
-            <BudgetTableRow
-              name="Non-Debt Expenses (57%)"
-              value={formatCurrency(
-                monthlyIncome * -0.57,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-              percentage={0.57}
-              percentageProps={{
-                color: 'error',
-                backgroundColor: 'info',
-                offsetPercentage: 0.43,
-              }}
-            />
-            <BudgetTableRow
-              name="Remaining for Debt Expenses (43%)"
-              value={formatCurrency(
-                budgetRemainForDebtExpenses,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-              percentage={0.43}
-            />
-            <BudgetTableRow
-              name="Sum of Existing Debts"
-              value={formatCurrency(
-                -totalOtherDebtsMonthly,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-            />
-            <BudgetTableRow
-              name="Remaining for Housing Costs"
-              value={formatCurrency(
-                budgetRemainForHousing,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-              percentage={budgetRemainForHousing / monthlyIncome}
-            />
-            <BudgetTableRow
-              name="Fixed Monthly Housing Costs"
-              value={formatCurrency(
-                -totalMonthlyUtilities,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-            />
-            <BudgetTableRow
-              name="Remaining for Taxes, Insurance, and Mortgage Payments"
-              value={formatCurrency(
-                budgetLimitMonthlyPiti,
-                FORMAT_CURRENCY_BUDGET,
-              )}
-              percentage={budgetLimitMonthlyPiti / monthlyIncome}
-            />
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Typography variant="h5" textAlign="left" width="100%">
-        2. Your Affordability Zone
-      </Typography>
+      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="h5">Assumptions</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <AssumptionsComponent onChange={setAssumptions} />
+        </AccordionDetails>
+      </Accordion>
+      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="h5">1. Monthly Budget Breakdown</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <TableContainer component={Paper} sx={{ maxWidth: 'sm' }}>
+            <Table aria-label="simple table">
+              <TableHead>
+                <TableRow
+                  sx={{ backgroundColor: theme => theme.palette.action.hover }}
+                >
+                  <TableCell size="small">Category</TableCell>
+                  <TableCell size="small" align="right">
+                    Monthly
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <BudgetTableRow
+                  name="Income"
+                  value={formatCurrency(monthlyIncome, FORMAT_CURRENCY_BUDGET)}
+                  percentage={1}
+                />
+                <BudgetTableRow
+                  name="Non-Debt Expenses (57%)"
+                  value={formatCurrency(
+                    monthlyIncome * -0.57,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                  percentage={0.57}
+                  percentageProps={{
+                    color: 'error',
+                    backgroundColor: 'info',
+                    offsetPercentage: 0.43,
+                  }}
+                />
+                <BudgetTableRow
+                  name="Remaining for Debt Expenses (43%)"
+                  value={formatCurrency(
+                    budgetRemainForDebtExpenses,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                  percentage={0.43}
+                />
+                <BudgetTableRow
+                  name="Sum of Existing Debts"
+                  value={formatCurrency(
+                    -totalOtherDebtsMonthly,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                />
+                <BudgetTableRow
+                  name="Remaining for Housing Costs"
+                  value={formatCurrency(
+                    budgetRemainForHousing,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                  percentage={budgetRemainForHousing / monthlyIncome}
+                />
+                <BudgetTableRow
+                  name="Fixed Monthly Housing Costs"
+                  value={formatCurrency(
+                    -totalMonthlyUtilities,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                />
+                <BudgetTableRow
+                  name="Remaining for Taxes, Insurance, and Mortgage Payments"
+                  value={formatCurrency(
+                    budgetLimitMonthlyPiti,
+                    FORMAT_CURRENCY_BUDGET,
+                  )}
+                  percentage={budgetLimitMonthlyPiti / monthlyIncome}
+                />
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
+      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+        <AccordionSummary expandIcon={<ExpandMore />}>
+          <Typography variant="h5" textAlign="left" width="100%">
+            2. Your Affordability Zone
+          </Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Typography variant="body1" textAlign="left" width="100%">
+            Your affordability zone is made up from two factors:
+          </Typography>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" textAlign="left" width="100%">
+                2.1. Debt-to-Income (DTI) Ratio
+              </Typography>
+              <Typography variant="body1" textAlign="left" width="100%">
+                Your DTI ratio is the percentage of your monthly income that
+                goes towards housing costs. A lower monthly payment is more
+                comfortable to afford. Everyone understands that paying less,
+                when possible, is better.
+              </Typography>
+            </CardContent>
+          </Card>
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" textAlign="left" width="100%">
+                2.2. Savings Retained After the Purchase
+              </Typography>
+              <Typography variant="body1" textAlign="left" width="100%">
+                Given the amount of money you have saved, a certain amount of
+                savings must be retained after the purchase to ensure you have
+                enough money for emergencies and other expenses. In some cases,
+                a lender may require at least 3 months worth of expenses.
+                However, for a comfortable safety net, you can aim for 6 months,
+                a year, or more. This puts a lower limit on how low your monthly
+                payment could get.
+              </Typography>
+            </CardContent>
+          </Card>
+        </AccordionDetails>
+      </Accordion>
 
-      <Typography variant="body1" textAlign="left" width="100%">
-        Your affordability zone is made up from two factors:
-      </Typography>
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="body1" textAlign="left" width="100%">
-            <Typography variant="h6" textAlign="left" width="100%">
-              2.1. Debt-to-Income (DTI) Ratio
-            </Typography>
-            <Typography variant="body1" textAlign="left" width="100%">
-              Your DTI ratio is the percentage of your monthly income that goes
-              towards housing costs. A lower monthly payment is more comfortable
-              to afford. Everyone understands that paying less, when possible,
-              is better.
-            </Typography>
-          </Typography>
-        </CardContent>
-      </Card>
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="body1" textAlign="left" width="100%">
-            <Typography variant="h6" textAlign="left" width="100%">
-              2.2. Savings Retained After the Purchase
-            </Typography>
-            <Typography variant="body1" textAlign="left" width="100%">
-              Given the amount of money you have saved, a certain amount of
-              savings must be retained after the purchase to ensure you have
-              enough money for emergencies and other expenses. In some cases, a
-              lender may require at least 3 months worth of expenses. However,
-              for a comfortable safety net, you can aim for 6 months, a year, or
-              more. This puts a lower limit on how low your monthly payment
-              could get.
-            </Typography>
-          </Typography>
-        </CardContent>
-      </Card>
       {/* <Box height={400} width={'100%'}>
         <ErrorBoundary
           fallback={<Typography variant="h6">Something went wrong.</Typography>}
@@ -551,6 +459,81 @@ const AffordabilityReport = () => {
         </ErrorBoundary>
       </Box> */}
       <Box height={400} width={'100%'}>
+        <ResponsiveHeatMap
+          data={getHeatmapAffordability(
+            { cashOnHand, annualIncome },
+            assumptions,
+          )}
+          colors={s => {
+            return Object({
+              0: theme.palette.error.main,
+              1: theme.palette.warning.main,
+              2: theme.palette.warning.main,
+              3: theme.palette.warning.main,
+              4: theme.palette.success.main,
+            })[s.data.y];
+          }}
+          emptyColor={theme.palette.background.paper}
+          theme={chartTheme}
+          margin={{
+            top: 50,
+            right: isMobile ? 0 : 130,
+            bottom: 50,
+            left: isMobile ? 50 : 100,
+          }}
+          valueFormat={formatCurrency}
+          axisTop={null}
+          axisLeft={{
+            tickSize: 0,
+            tickPadding: 5,
+            tickRotation: 0,
+            legend: 'Monthly Payment',
+            legendPosition: 'middle',
+            legendOffset: -44,
+          }}
+          axisBottom={{
+            tickSize: 5,
+            tickPadding: 5,
+            tickRotation: isMobile ? -50 : 0,
+            legend: 'Purchase Price',
+            legendPosition: 'middle',
+            legendOffset: 36,
+            format: formatCurrency,
+          }}
+          labelTextColor={{
+            from: 'color',
+            modifiers: [['darker', 1.8]],
+          }}
+          tooltip={NivoTooltip}
+          animate={true}
+          // motionStiffness={90}
+          // motionDamping={11}
+          hoverTarget="cell"
+          // cellHoverOthersOpacity={0.25}
+          // cellOpacity={1}
+          // cellBorderWidth={0}
+          // cellBorderColor={{
+          //   from: 'color',
+          //   modifiers: [['darker', 0.4]],
+          // }}
+          enableLabels={true}
+          annotations={[
+            {
+              type: 'circle',
+              match: { serieId: '6000', value: 1.0 },
+              noteX: 50,
+              noteY: 50,
+              noteTextOffset: 10,
+              noteWidth: 80,
+              offset: 3,
+              note: 'Special Value',
+            },
+          ]}
+
+          // label={d => formatCurrency(d.value)}
+        />
+      </Box>
+      <Box height={400} width={'100%'}>
         <ResponsiveBar
           data={getTestSeriesData({ cashOnHand, annualIncome }, assumptions)}
           minValue={2000}
@@ -616,7 +599,6 @@ const AffordabilityReport = () => {
             tickSize: 5,
             tickPadding: 5,
             tickRotation: isMobile ? -50 : 0,
-            // tickValues: [200_000, 400_000, 600_000, 800_000, 1_000_000, 1_200_000].map((x) => formatCurrency(x)),
             legend: 'Purchase Price',
             legendPosition: 'middle',
             legendOffset: 36,

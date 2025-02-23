@@ -173,7 +173,7 @@ export function monthlyPaymentGivenDownPayment(
   if (w < inp.propertyValue * 0.03) return null;
 
   const loanAmount = inp.propertyValue - w;
-  const pi =
+  const principalAndInterest =
     loanAmount /
     getAmortizedPaymentMultiplier({
       interestRatePerPeriod: inp.interestRatePerPeriod,
@@ -181,9 +181,16 @@ export function monthlyPaymentGivenDownPayment(
     });
   const taxes = (inp.propertyTaxRate * inp.propertyValue) / 12.0;
   const insuranceAndOther = inp.monthlyFixed; // todo: add insurance
-  return pi + taxes + insuranceAndOther;
+  return principalAndInterest + taxes + insuranceAndOther;
 }
 
 export function lesserOf(first: number, second: number | null) {
   return second !== null && second < first ? second : first;
+}
+
+export function range(start: number, stop: number, step: number) {
+  return Array.from(
+    { length: (stop - start) / step + 1 },
+    (_, i) => start + i * step,
+  );
 }

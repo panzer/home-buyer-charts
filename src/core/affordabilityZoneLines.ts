@@ -2,8 +2,16 @@ import { Theme } from '@mui/material/styles';
 import { Serie, Datum } from '@nivo/line';
 import { Assumptions } from '../components/Assumptions';
 import { sumExpenses } from '../components';
-import { idealMonthlyPayment } from '../utils/math';
+import { idealMonthlyPayment, range } from '../utils/math';
 import { makeHorizontalLineData } from '../utils/nivo';
+
+import { AffordibilityInputs } from './common';
+import {
+  dtiOfMonthlyPayment,
+  getDownpaymentGivenPayment,
+  getClosingCosts,
+  maxMonthlyPaymentByDti,
+} from './mortgage';
 
 export type RiskLevels = {
   // minimum: number;
@@ -16,11 +24,6 @@ export type RiskLevels = {
 export type AffordabilityOptions = {
   dtiRisk: RiskLevels;
   cashReserveMonthsRisk: RiskLevels;
-};
-
-export type AffordibilityInputs = {
-  cashOnHand: number;
-  annualIncome: number;
 };
 
 export function getRiskToColorMap(
@@ -140,14 +143,14 @@ function calculateRiskCrossoversToDisplay(
   rawPayments: MonthlyPaymentAtRisks,
 ): PlotDataDisplayPurchaseRisk {
   /*
-    Invariants:
-    1. For dti, increased risk level requires increased payment amount
-    2. For reserve, increased risk level requires lower payment amount
-    Output:
-    Calculates the overlap of each risk level, where low x low => lowDtiLowReserve and high x high => highDtiHighReserve
-    The output is a set of 9 lines, each representing a risk level combination
-    1. Each line stacks on top of the previous, so lowDtiMediumReserve is above lowDtiLowReserve
-    */
+      Invariants:
+      1. For dti, increased risk level requires increased payment amount
+      2. For reserve, increased risk level requires lower payment amount
+      Output:
+      Calculates the overlap of each risk level, where low x low => lowDtiLowReserve and high x high => highDtiHighReserve
+      The output is a set of 9 lines, each representing a risk level combination
+      1. Each line stacks on top of the previous, so lowDtiMediumReserve is above lowDtiLowReserve
+      */
   const { dti, reserve } = rawPayments;
   const lowDtiRange = { low: 0, high: dti.low };
   const mediumDtiRange = { low: dti.low, high: dti.medium };
@@ -175,15 +178,10 @@ export function getTestSeriesData(
   inputs: AffordibilityInputs,
   assumptions: Assumptions,
 ): ({ index: string } & PlotDataDisplayPurchaseRisk)[] {
-  const minPurchasePrice = 200_000;
+  const minPurchasePrice = 400_000;
   const maxPurchasePrice = 1_200_000;
   const stepPurchasePrice = 40_000;
-  function range(start: number, stop: number, step: number) {
-    return Array.from(
-      { length: (stop - start) / step + 1 },
-      (_, i) => start + i * step,
-    );
-  }
+
   const purchasePrices = range(
     minPurchasePrice,
     maxPurchasePrice,
@@ -209,14 +207,12 @@ export function getTestSeriesData(
         options,
         purchasePrice,
       );
-      console.log(rawPayments);
       const crossovers = calculateRiskCrossoversToDisplay(rawPayments);
       return {
         index: `${purchasePrice}`,
         ...crossovers,
       };
     } catch (e) {
-      console.log(e);
       return {
         index: `${purchasePrice}`,
         lowDtiLowReserve: 0,
@@ -233,13 +229,113 @@ export function getTestSeriesData(
   });
 }
 
-export function testCalculateRiskCrossoversToDisplay() {
-  const rawPayments = {
-    dti: { low: 1000, medium: 2000, high: 3000 },
-    reserve: { low: 2500, medium: 2000, high: 1500 },
+function scoreRisk(value: number, ranges: RiskLevels): keyof RiskLevels {
+  if (value < ranges.low) {
+    return 'low';
+  } else if (value < ranges.medium) {
+    return 'medium';
+  } else {
+    return 'high';
+  }
+}
+
+function scoreRiskAscending(
+  value: number,
+  ranges: RiskLevels,
+): keyof RiskLevels {
+  if (value > ranges.low) {
+    return 'low';
+  } else if (value > ranges.medium) {
+    return 'medium';
+  } else {
+    return 'high';
+  }
+}
+
+function getCashReserveMonths(
+  inputs: AffordibilityInputs,
+  assumptions: Assumptions,
+  monthlyPayment: number,
+  purchasePrice: number,
+): number {
+  const downPayment = getDownpaymentGivenPayment({
+    monthlyPayment,
+    purchasePrice,
+    assumptions,
+  });
+  const closingCosts = getClosingCosts(assumptions, purchasePrice);
+  const cashReservedAfterClosing =
+    inputs.cashOnHand - downPayment - closingCosts;
+  const cashReserveMonths = cashReservedAfterClosing / monthlyPayment;
+  return cashReserveMonths;
+}
+
+function riskLevelToNumber(riskLevel: keyof RiskLevels): number {
+  switch (riskLevel) {
+    case 'low':
+      return 2;
+    case 'medium':
+      return 1;
+    case 'high':
+      return 0;
+  }
+}
+
+export function getHeatmapAffordability(
+  inputs: AffordibilityInputs,
+  assumptions: Assumptions,
+) {
+  const minPurchasePrice = 400_000;
+  const maxPurchasePrice = 1_200_000;
+  const stepPurchasePrice = 40_000;
+
+  const purchasePrices = range(
+    minPurchasePrice,
+    maxPurchasePrice,
+    stepPurchasePrice,
+  );
+  const monthlyPayments = range(
+    0,
+    maxMonthlyPaymentByDti(inputs, assumptions),
+    500,
+  ).reverse();
+  const options: AffordabilityOptions = {
+    dtiRisk: {
+      low: 0.33,
+      medium: 0.38,
+      high: 0.43,
+    },
+    cashReserveMonthsRisk: {
+      low: 12,
+      medium: 6,
+      high: 3,
+    },
   };
-  const crossovers = calculateRiskCrossoversToDisplay(rawPayments);
-  console.log(crossovers);
+  return monthlyPayments.map(monthlyPayment => {
+    return {
+      id: monthlyPayment.toString(),
+      data: purchasePrices.map(purchasePrice => {
+        const dti = dtiOfMonthlyPayment(inputs, assumptions, monthlyPayment);
+        const cashReserveMonths = getCashReserveMonths(
+          inputs,
+          assumptions,
+          monthlyPayment,
+          purchasePrice,
+        );
+        const dtiRiskLevel = scoreRisk(dti, options.dtiRisk);
+        const cashReserveRiskLevel = scoreRiskAscending(
+          cashReserveMonths,
+          options.cashReserveMonthsRisk,
+        );
+        return {
+          x: purchasePrice,
+          y:
+            riskLevelToNumber(dtiRiskLevel) *
+            riskLevelToNumber(cashReserveRiskLevel),
+        };
+      }),
+    };
+  });
 }
 
 function getLineSerieForAffordabilityZone(
