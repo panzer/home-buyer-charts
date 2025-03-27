@@ -1,4 +1,20 @@
-# Getting Started with Create React App
+# Home Affordability Tools
+
+<img src="docs/preview-01.jpg" alt="Home Affordability Tool Preview" width="500">
+
+This tool is an advanced home affordability calculator designed to
+provide a comprehensive and transparent view of your home buying
+power. Unlike traditional calculators, it allows for fine-tuning of
+various financial factors, offering multiple perspectives and
+customizable calculations to better suit individual needs.
+
+Ultimately, I aim for it to be the most nerdy way to calculate home affordibility.
+
+> :warning: **Work in Progress**: This tool is currently under development. Features may be incomplete or may not work as expected. Please use it with caution and feel free to report any issues you encounter.
+
+Luckily, I was able to experiment with the [Nivo plotting library](https://nivo.rocks), which is extremely powerful and easy to use.
+
+---
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
