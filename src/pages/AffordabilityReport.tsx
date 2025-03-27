@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router';
 import { ErrorBoundary } from 'react-error-boundary';
 
 import { useTheme } from '@mui/material/styles';
@@ -61,9 +62,19 @@ const AffordabilityReport = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Calculation state
-  const [cashOnHand, setCashOnHand] = React.useState(250_000);
-  const [annualIncome, setAnnualIncome] = React.useState(230_000);
+  function numberOrNull(s: string | null): number | null {
+    if (!s) return null;
+    return parseFloat(s);
+  }
+  const [cashOnHand, setCashOnHand] = React.useState(
+    numberOrNull(searchParams.get('c')) || 100_000,
+  );
+  const [annualIncome, setAnnualIncome] = React.useState(
+    numberOrNull(searchParams.get('i')) || 200_000,
+  );
   const [assumptions, setAssumptions] =
     React.useState<Assumptions>(defaultAssumptions);
 
@@ -519,14 +530,14 @@ const AffordabilityReport = () => {
           enableLabels={true}
           annotations={[
             {
-              type: 'circle',
+              type: 'rect',
               match: { serieId: '6000', value: 1.0 },
               noteX: 50,
               noteY: 50,
               noteTextOffset: 10,
               noteWidth: 80,
               offset: 3,
-              note: 'Special Value',
+              note: 'Maximum Affordability',
             },
           ]}
 

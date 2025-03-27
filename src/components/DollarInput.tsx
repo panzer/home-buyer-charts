@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import FormControl, {
   FormControlProps,
   useFormControl,
@@ -51,6 +51,16 @@ const DollarInput: React.FC<DollarInputProps> = ({
   inputLabelProps,
   outlinedInputProps,
 }) => {
+  const [inputValue, setInputValue] = useState(defaultValue || '');
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.replace(/,/g, '');
+    if (!isNaN(Number(value))) {
+      setInputValue(value.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+      onChange?.(Number(value));
+    }
+  };
+
   return (
     <FormControl
       {...formControlProps}
@@ -62,13 +72,9 @@ const DollarInput: React.FC<DollarInputProps> = ({
       <OutlinedInput
         id={id}
         startAdornment={<InputAdornment position="start">$</InputAdornment>}
-        // endAdornment={<InputAdornment position="end">k</InputAdornment>}
         label={label}
-        defaultValue={defaultValue}
-        onChange={event => {
-          console.log('event', event.target.value);
-          onChange?.(Number.parseFloat(event.target.value.replace(/,/g, '')));
-        }}
+        value={inputValue}
+        onChange={handleInputChange}
         {...outlinedInputProps}
         inputProps={{
           step: step,

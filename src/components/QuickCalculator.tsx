@@ -1,34 +1,36 @@
-import React, { useState } from "react";
-import Button from "@mui/material/Button";
-import InputAdornment from "@mui/material/InputAdornment";
-import FormHelperText from "@mui/material/FormHelperText";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogActions from "@mui/material/DialogActions";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router';
+import Button from '@mui/material/Button';
+import InputAdornment from '@mui/material/InputAdornment';
+import FormHelperText from '@mui/material/FormHelperText';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
 
-import IncomeSelector from "./IncomeSelector";
-import CashOnHandSelector from "./CashOnHandSelector";
-import StateZipSelector from "./StateZipSelector";
+import IncomeSelector from './IncomeSelector';
+import CashOnHandSelector from './CashOnHandSelector';
+import StateZipSelector from './StateZipSelector';
 
 const QuickCalculator = () => {
-  const [annualIncome, setAnnualIncome] = useState("");
-  const [cashAvailable, setCashAvailable] = useState("");
-  const [stateOrZip, setStateOrZip] = useState("");
+  const navigate = useNavigate();
+  const [annualIncome, setAnnualIncome] = useState('');
+  const [cashAvailable, setCashAvailable] = useState('');
+  const [stateOrZip, setStateOrZip] = useState('');
   const [openHelper, setOpenHelper] = useState(false);
-  const [helperText, setHelperText] = useState("");
+  const [helperText, setHelperText] = useState('');
 
   const handleIncomeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setAnnualIncome(event.target.value.replace(/[^0-9]/g, ""));
+    setAnnualIncome(event.target.value.replace(/[^0-9]/g, ''));
   };
 
   const handleCashChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCashAvailable(event.target.value.replace(/[^0-9]/g, ""));
+    setCashAvailable(event.target.value.replace(/[^0-9]/g, ''));
   };
 
   const handleStateOrZipChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setStateOrZip(event.target.value);
   };
@@ -65,7 +67,7 @@ const QuickCalculator = () => {
           )
         }
       /> */}
-      <IncomeSelector />
+      <IncomeSelector onSelect={x => setAnnualIncome(String(x))} />
       {/* <TextField
         label="Cash Available"
         value={cashAvailable}
@@ -82,20 +84,24 @@ const QuickCalculator = () => {
           )
         }
       /> */}
-      <CashOnHandSelector onSelect={(x) => setCashAvailable(String(x))} />
+      <CashOnHandSelector onSelect={x => setCashAvailable(String(x))} />
 
-      <StateZipSelector onSelect={(x) => setStateOrZip(x)} />
-
-      <Button
-        type="submit"
-        variant="contained"
-        sx={{
-          background: (theme) =>
-            `linear-gradient(to right, ${theme.palette.success.main}, ${theme.palette.success.dark})`,
-        }}
-      >
-        Get Your Results
-      </Button>
+      {/* <StateZipSelector onSelect={(x) => setStateOrZip(x)} /> */}
+      <div style={{ width: 'auto' }}>
+        <Button
+          type="submit"
+          variant="contained"
+          sx={{
+            background: theme =>
+              `linear-gradient(to right, ${theme.palette.success.main}, ${theme.palette.success.dark})`,
+          }}
+          onClick={() =>
+            navigate(`/report?i=${annualIncome}&c=${cashAvailable}`)
+          }
+        >
+          Get Your Results
+        </Button>
+      </div>
 
       <Dialog open={openHelper} onClose={handleHelperClose}>
         <DialogTitle>Information</DialogTitle>

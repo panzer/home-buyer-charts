@@ -46,8 +46,10 @@ function App() {
       <ThemeProvider theme={theme}>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<PageWithNavBar />}>
+            <Route path="/" element={<PageWithNavBar position="fixed" />}>
               <Route path="/" element={<HomePage />} />
+            </Route>
+            <Route path="/" element={<PageWithNavBar />}>
               <Route path="/explore" element={<Heatmaps />} />
               <Route path="/nivo" element={<MyResponsiveBar />} />
               <Route path="/report" element={<AffordabilityReport />} />
