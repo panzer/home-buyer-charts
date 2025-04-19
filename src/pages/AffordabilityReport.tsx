@@ -13,6 +13,7 @@ import { ResponsiveBar } from '@nivo/bar';
 import { ResponsiveLine } from '@nivo/line';
 import { ResponsivePie } from '@nivo/pie';
 import { ResponsiveHeatMap } from '@nivo/heatmap';
+import { ResponsiveSankey } from '@nivo/sankey';
 import { OrdinalColorScaleConfig } from '@nivo/colors';
 import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
@@ -246,136 +247,243 @@ const AffordabilityReport = () => {
           {isPinned ? <Bookmark /> : <BookmarkBorder />}
         </IconButton>
       </Paper>
+      <Box>
+        <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h5">Assumptions</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <AssumptionsComponent onChange={setAssumptions} />
+          </AccordionDetails>
+        </Accordion>
+        <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h5">1. Monthly Budget Breakdown</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TableContainer component={Paper} sx={{ maxWidth: 'sm' }}>
+              <Table aria-label="simple table">
+                <TableHead>
+                  <TableRow
+                    sx={{
+                      backgroundColor: theme => theme.palette.action.hover,
+                    }}
+                  >
+                    <TableCell size="small">Category</TableCell>
+                    <TableCell size="small" align="right">
+                      Monthly
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <BudgetTableRow
+                    name="Income"
+                    value={formatCurrency(
+                      monthlyIncome,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                    percentage={1}
+                  />
+                  <BudgetTableRow
+                    name="Non-Debt Expenses (57%)"
+                    value={formatCurrency(
+                      monthlyIncome * -0.57,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                    percentage={0.57}
+                    percentageProps={{
+                      color: 'error',
+                      backgroundColor: 'info',
+                      offsetPercentage: 0.43,
+                    }}
+                  />
+                  <BudgetTableRow
+                    name="Remaining for Debt Expenses (43%)"
+                    value={formatCurrency(
+                      budgetRemainForDebtExpenses,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                    percentage={0.43}
+                  />
+                  <BudgetTableRow
+                    name="Sum of Existing Debts"
+                    value={formatCurrency(
+                      -totalOtherDebtsMonthly,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                  />
+                  <BudgetTableRow
+                    name="Remaining for Housing Costs"
+                    value={formatCurrency(
+                      budgetRemainForHousing,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                    percentage={budgetRemainForHousing / monthlyIncome}
+                  />
+                  <BudgetTableRow
+                    name="Fixed Monthly Housing Costs"
+                    value={formatCurrency(
+                      -totalMonthlyUtilities,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                  />
+                  <BudgetTableRow
+                    name="Remaining for Taxes, Insurance, and Mortgage Payments"
+                    value={formatCurrency(
+                      budgetLimitMonthlyPiti,
+                      FORMAT_CURRENCY_BUDGET,
+                    )}
+                    percentage={budgetLimitMonthlyPiti / monthlyIncome}
+                  />
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h5" textAlign="left" width="100%">
+              2. Your Affordability Zone
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body1" textAlign="left" width="100%">
+              Your affordability zone is made up from two factors:
+            </Typography>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" textAlign="left" width="100%">
+                  2.1. Debt-to-Income (DTI) Ratio
+                </Typography>
+                <Typography variant="body1" textAlign="left" width="100%">
+                  Your DTI ratio is the percentage of your monthly income that
+                  goes towards housing costs. A lower monthly payment is more
+                  comfortable to afford. Everyone understands that paying less,
+                  when possible, is better.
+                </Typography>
+              </CardContent>
+            </Card>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" textAlign="left" width="100%">
+                  2.2. Savings Retained After the Purchase
+                </Typography>
+                <Typography variant="body1" textAlign="left" width="100%">
+                  Given the amount of money you have saved, a certain amount of
+                  savings must be retained after the purchase to ensure you have
+                  enough money for emergencies and other expenses. In some
+                  cases, a lender may require at least 3 months worth of
+                  expenses. However, for a comfortable safety net, you can aim
+                  for 6 months, a year, or more. This puts a lower limit on how
+                  low your monthly payment could get.
+                </Typography>
+              </CardContent>
+            </Card>
+          </AccordionDetails>
+        </Accordion>
+      </Box>
 
-      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="h5">Assumptions</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <AssumptionsComponent onChange={setAssumptions} />
-        </AccordionDetails>
-      </Accordion>
-      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="h5">1. Monthly Budget Breakdown</Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <TableContainer component={Paper} sx={{ maxWidth: 'sm' }}>
-            <Table aria-label="simple table">
-              <TableHead>
-                <TableRow
-                  sx={{ backgroundColor: theme => theme.palette.action.hover }}
-                >
-                  <TableCell size="small">Category</TableCell>
-                  <TableCell size="small" align="right">
-                    Monthly
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <BudgetTableRow
-                  name="Income"
-                  value={formatCurrency(monthlyIncome, FORMAT_CURRENCY_BUDGET)}
-                  percentage={1}
-                />
-                <BudgetTableRow
-                  name="Non-Debt Expenses (57%)"
-                  value={formatCurrency(
-                    monthlyIncome * -0.57,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                  percentage={0.57}
-                  percentageProps={{
-                    color: 'error',
-                    backgroundColor: 'info',
-                    offsetPercentage: 0.43,
-                  }}
-                />
-                <BudgetTableRow
-                  name="Remaining for Debt Expenses (43%)"
-                  value={formatCurrency(
-                    budgetRemainForDebtExpenses,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                  percentage={0.43}
-                />
-                <BudgetTableRow
-                  name="Sum of Existing Debts"
-                  value={formatCurrency(
-                    -totalOtherDebtsMonthly,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                />
-                <BudgetTableRow
-                  name="Remaining for Housing Costs"
-                  value={formatCurrency(
-                    budgetRemainForHousing,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                  percentage={budgetRemainForHousing / monthlyIncome}
-                />
-                <BudgetTableRow
-                  name="Fixed Monthly Housing Costs"
-                  value={formatCurrency(
-                    -totalMonthlyUtilities,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                />
-                <BudgetTableRow
-                  name="Remaining for Taxes, Insurance, and Mortgage Payments"
-                  value={formatCurrency(
-                    budgetLimitMonthlyPiti,
-                    FORMAT_CURRENCY_BUDGET,
-                  )}
-                  percentage={budgetLimitMonthlyPiti / monthlyIncome}
-                />
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </AccordionDetails>
-      </Accordion>
-      <Accordion sx={{ width: '100%', maxWidth: 'md' }}>
-        <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="h5" textAlign="left" width="100%">
-            2. Your Affordability Zone
-          </Typography>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Typography variant="body1" textAlign="left" width="100%">
-            Your affordability zone is made up from two factors:
-          </Typography>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" textAlign="left" width="100%">
-                2.1. Debt-to-Income (DTI) Ratio
-              </Typography>
-              <Typography variant="body1" textAlign="left" width="100%">
-                Your DTI ratio is the percentage of your monthly income that
-                goes towards housing costs. A lower monthly payment is more
-                comfortable to afford. Everyone understands that paying less,
-                when possible, is better.
-              </Typography>
-            </CardContent>
-          </Card>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" textAlign="left" width="100%">
-                2.2. Savings Retained After the Purchase
-              </Typography>
-              <Typography variant="body1" textAlign="left" width="100%">
-                Given the amount of money you have saved, a certain amount of
-                savings must be retained after the purchase to ensure you have
-                enough money for emergencies and other expenses. In some cases,
-                a lender may require at least 3 months worth of expenses.
-                However, for a comfortable safety net, you can aim for 6 months,
-                a year, or more. This puts a lower limit on how low your monthly
-                payment could get.
-              </Typography>
-            </CardContent>
-          </Card>
-        </AccordionDetails>
-      </Accordion>
-
+      <Box height={400} width={'100%'}>
+        <ResponsiveSankey
+          data={{
+            nodes: [
+              // { id: 'Income' },
+              // { id: 'Other Obligated Expenses' },
+              { id: 'Total Allowed Debt (43%)' },
+              { id: 'Non-Housing Debt' },
+              { id: 'Total Housing Cost' },
+              { id: 'Mortgage Payment' },
+              { id: 'Property Taxes' },
+              { id: 'Homeowners Insurance' },
+              { id: 'HOA Fees' },
+              { id: 'Maintenance' },
+              { id: 'Utilities' },
+            ],
+            links: [
+              // {
+              //   source: 'Income',
+              //   target: 'Other Obligated Expenses',
+              //   value: 57,
+              // },
+              // {
+              //   source: 'Income',
+              //   target: 'Total Allowed Debt (43%)',
+              //   value: 43,
+              // },
+              {
+                source: 'Total Allowed Debt (43%)',
+                target: 'Total Housing Cost',
+                value: 30,
+              },
+              {
+                source: 'Total Allowed Debt (43%)',
+                target: 'Non-Housing Debt',
+                value: 13,
+              },
+              {
+                source: 'Total Housing Cost',
+                target: 'Mortgage Payment',
+                value: 25,
+              },
+              {
+                source: 'Total Housing Cost',
+                target: 'Property Taxes',
+                value: 1,
+              },
+              {
+                source: 'Total Housing Cost',
+                target: 'Homeowners Insurance',
+                value: 1,
+              },
+              { source: 'Total Housing Cost', target: 'HOA Fees', value: 1 },
+              { source: 'Total Housing Cost', target: 'Maintenance', value: 1 },
+              { source: 'Total Housing Cost', target: 'Utilities', value: 1 },
+            ],
+          }}
+          margin={{ top: 40, right: 160, bottom: 40, left: 50 }}
+          align="center"
+          colors={{ scheme: 'category10' }}
+          nodeOpacity={1}
+          nodeHoverOthersOpacity={0.35}
+          nodeThickness={18}
+          nodeSpacing={24}
+          nodeBorderWidth={0}
+          nodeBorderColor={{ from: 'color', modifiers: [['darker', 0.8]] }}
+          nodeBorderRadius={3}
+          linkOpacity={0.5}
+          linkHoverOthersOpacity={0.1}
+          linkBlendMode={
+            theme.palette.mode === 'dark' ? 'difference' : 'normal'
+          }
+          linkContract={3}
+          enableLinkGradient={true}
+          labelPosition="inside"
+          labelOrientation="horizontal"
+          labelPadding={12}
+          labelTextColor={{ from: 'color', modifiers: [['darker', 1]] }}
+          // legends={[
+          //   {
+          //     anchor: 'bottom-right',
+          //     direction: 'column',
+          //     translateX: 130,
+          //     itemWidth: 100,
+          //     itemHeight: 14,
+          //     itemDirection: 'right-to-left',
+          //     itemsSpacing: 2,
+          //     itemTextColor: '#999',
+          //     symbolSize: 14,
+          //     effects: [
+          //       {
+          //         on: 'hover',
+          //         style: {
+          //           itemTextColor: '#000',
+          //         },
+          //       },
+          //     ],
+          //   },
+          // ]}
+        />
+      </Box>
       {/* <Box height={400} width={'100%'}>
         <ErrorBoundary
           fallback={<Typography variant="h6">Something went wrong.</Typography>}
